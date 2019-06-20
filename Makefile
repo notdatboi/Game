@@ -51,3 +51,10 @@ obj/Buffer.o: src/Buffer.cpp \
 	include/MemoryManager.hpp \
 	include/SparkIncludeBase.hpp
 	$(CC) -c $< -o $@ -g
+
+obj/Subpass.o: src/Subpass.cpp \
+	include/Subpass.hpp \
+	include/SparkIncludeBase.hpp \
+	include/Executives.hpp \
+	include/System.hpp
+	$(CC) -c $< -o $@ -g
