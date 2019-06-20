@@ -176,5 +176,21 @@ namespace spk
         {
             return secondaryCommandBuffer;
         }
+
+        void Subpass::destroy()
+        {
+            if(secondaryCommandBuffer)
+            {
+                const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+                const vk::CommandPool& pool = system::Executives::getInstance()->getPool();
+                logicalDevice.freeCommandBuffers(pool, 1, &secondaryCommandBuffer);
+                secondaryCommandBuffer = vk::CommandBuffer();
+            }
+        }
+
+        Subpass::~Subpass()
+        {
+            destroy();
+        }
     }
 }

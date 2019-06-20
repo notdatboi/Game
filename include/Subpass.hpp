@@ -38,6 +38,8 @@ namespace spk
             Subpass& drawIndexed(const uint32_t indexCount, const uint32_t instanceCount, const uint32_t firstIndex = 0, const uint32_t firstInstance = 0, const int32_t offset = 0);
             Subpass& endRecording();
             Subpass& reset(const bool releaseResources);
+            void destroy();
+            ~Subpass();
 
             // Getters
             const vk::SubpassDescription getDescription() const;
