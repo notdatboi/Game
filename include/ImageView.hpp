@@ -6,21 +6,18 @@
 
 namespace spk
 {
-    namespace utils
+    class ImageView
     {
-        class ImageView
-        {
-        public:
-            ImageView();
-            ImageView(const vk::Image& image, const vk::Format format, const vk::ImageSubresourceRange range);
-            void create(const vk::Image& image, const vk::Format format, const vk::ImageSubresourceRange range);
-            void destroy();
-            const vk::ImageView& getView() const;
-            ~ImageView();
-        private:
-            vk::ImageView view;
-        };
-    }
+    public:
+        ImageView();
+        ImageView(const vk::Image& image, const vk::Format format, const vk::ImageSubresourceRange range);
+        void create(const vk::Image& image, const vk::Format format, const vk::ImageSubresourceRange range);
+        void destroy();
+        const vk::ImageView& getView() const;
+        ~ImageView();
+    private:
+        vk::ImageView view;
+    };
 }
 
 #endif
