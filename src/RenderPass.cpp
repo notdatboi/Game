@@ -42,13 +42,20 @@ namespace spk
         return *this;
     }
 
-    RenderPass& RenderPass::beginRecording(const uint32_t index, const uint32_t clearValueCount, const vk::Rect2D renderArea)
+    RenderPass& RenderPass::beginRecording(const uint32_t index, const uint32_t clearValueCount, const vk::Rect2D renderArea, const vk::Fence& waitFence)
     {
         if(index > frameCommandBuffers.size() - 1) throw std::out_of_range("Command buffer index is out of range!\n");
         recordingBufferIndex = index;
         vk::CommandBuffer& currentCB = frameCommandBuffers[recordingBufferIndex];
         vk::CommandBufferBeginInfo beginInfo;
         beginInfo.setPInheritanceInfo(nullptr);
+
+        if(waitFence)
+        {
+            const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+            if(logicalDevice.waitForFences(1, &waitFence, true, ~0U) != vk::Result::eSuccess) throw std::runtime_error("Failed to wait for fence!\n");
+        }
+
         if(currentCB.begin(&beginInfo) != vk::Result::eSuccess) throw std::runtime_error("Failed to begin command buffer!\n");
 
         std::vector<vk::ClearValue> clearVals(clearValueCount, vk::ClearValue());
