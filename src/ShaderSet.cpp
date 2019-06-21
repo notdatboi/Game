@@ -38,15 +38,7 @@ namespace spk
 
             logicalDevice.createShaderModule(&info, nullptr, &shaderModules[i].first);
 
-            switch (shaders[i].type)
-            {
-                case ShaderType::Vertex:
-                    shaderModules[i].second = vk::ShaderStageFlagBits::eVertex;
-                    break;
-                case ShaderType::Fragment:
-                    shaderModules[i].second = vk::ShaderStageFlagBits::eFragment;
-                    break;
-            }
+            shaderModules[i].second = shaders[i].type;
         }
         for(int i = 0; i < shaderModules.size(); ++i)
         {

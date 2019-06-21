@@ -9,15 +9,9 @@
 
 namespace spk
 {
-    enum class ShaderType
-    {
-        Vertex, 
-        Fragment
-    };
-
     struct ShaderInfo
     {
-        ShaderType type;
+        vk::ShaderStageFlagBits type;
         std::string filename;
     };
 
