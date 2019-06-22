@@ -65,7 +65,7 @@ namespace spk
         return *this;
     }
 
-    DescriptorPool& DescriptorPool::writeDescriptorSetBuffer(const uint32_t index, const uint32_t binding, const vk::DescriptorType& type, const vk::DescriptorBufferInfo& bufferInfo, const uint32_t descriptorIndex = 0, const uint32_t descriptorCount = 1)
+    DescriptorPool& DescriptorPool::writeDescriptorSetBuffer(const uint32_t index, const uint32_t binding, const vk::DescriptorType& type, const vk::DescriptorBufferInfo& bufferInfo, const uint32_t descriptorIndex, const uint32_t descriptorCount)
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
         vk::WriteDescriptorSet write;

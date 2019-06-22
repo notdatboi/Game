@@ -58,3 +58,22 @@ obj/Subpass.o: src/Subpass.cpp \
 	include/Executives.hpp \
 	include/System.hpp
 	$(CC) -c $< -o $@ -g
+
+obj/RenderPass.o: src/RenderPass.cpp \
+	include/RenderPass.hpp \
+	include/SparkIncludeBase.hpp \
+	include/Executives.hpp \
+	include/System.hpp
+	$(CC) -c $< -o $@ -g
+
+obj/Pipeline.o: src/Pipeline.cpp \
+	include/Pipeline.hpp \
+	include/SparkIncludeBase.hpp \
+	include/System.hpp
+	$(CC) -c $< -o $@ -g
+
+obj/DescriptorPool.o: src/DescriptorPool.cpp \
+	include/DescriptorPool.hpp \
+	include/SparkIncludeBase.hpp \
+	include/System.hpp
+	$(CC) -c $< -o $@ -g

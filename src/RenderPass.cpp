@@ -37,7 +37,7 @@ namespace spk
         cbInfo.setCommandBufferCount(1)
             .setCommandPool(pool)
             .setLevel(vk::CommandBufferLevel::ePrimary);
-        if(logicalDevice.allocateCommandBuffers(&cbInfo, nullptr, &frameCommandBuffers.back()) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate command buffer!\n");
+        if(logicalDevice.allocateCommandBuffers(&cbInfo, &frameCommandBuffers.back()) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate command buffer!\n");
 
         return *this;
     }
