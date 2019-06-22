@@ -17,13 +17,13 @@ namespace spk
         const bool enableValidation = false;
         #endif
 
-        void init();
+        void init(const std::vector<const char*> additionalExtensions = std::vector<const char*>());
         void deinit();
 
         class System
         {
         public:
-            static System* getInstance();
+            static System* getInstance(const std::vector<const char*> additionalExtensions = std::vector<const char*>());
             vk::Instance& getvkInstance();
             vk::Device& getLogicalDevice();
             vk::PhysicalDevice& getPhysicalDevice();
@@ -36,7 +36,7 @@ namespace spk
             std::vector<const char*> getInstanceExtensions() const;
             std::vector<const char*> getDeviceExtensions() const;
             std::vector<const char*> getInstanceLayers() const;
-            void createInstance();
+            void createInstance(const std::vector<const char*> additionalExtensions = std::vector<const char*>());
             void createPhysicalDevice();
             void createLogicalDevice();
             static VKAPI_ATTR VkBool32 VKAPI_CALL callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);

@@ -11,9 +11,9 @@ namespace spk
             throw std::runtime_error(error.c_str());
         }
 
-        void init()
+        void init(const std::vector<const char*> additionalExtensions)
         {
-            System::getInstance();
+            System::getInstance(additionalExtensions);
         }
 
         void deinit()
@@ -23,7 +23,7 @@ namespace spk
 
         System::System()
         {
-            glfwInit();
+        //    glfwInit();
         }
 
         vk::Instance& System::getvkInstance()
@@ -58,14 +58,14 @@ namespace spk
 
         std::unique_ptr<System> System::systemInstance = nullptr;
 
-        System* System::getInstance()
+        System* System::getInstance(const std::vector<const char*> additionalExtensions)
         {
             static bool created = false;
             if(!created)
             {
                 systemInstance.reset(new System());
                 created = true;
-                systemInstance->createInstance();
+                systemInstance->createInstance(additionalExtensions);
                 systemInstance->createPhysicalDevice();
                 Executives::getInstance();
                 systemInstance->createLogicalDevice();
@@ -76,10 +76,11 @@ namespace spk
 
         std::vector<const char*> System::getInstanceExtensions() const
         {
-            uint32_t glfwExtCount = 1;
+/*            uint32_t glfwExtCount = 1;
             const char ** glfwExtData;
             glfwExtData = glfwGetRequiredInstanceExtensions(&glfwExtCount);
-            std::vector<const char *> extData(glfwExtData, glfwExtData + glfwExtCount);
+            std::vector<const char *> extData(glfwExtData, glfwExtData + glfwExtCount);*/
+            std::vector<const char *> extData;
             if(enableValidation) extData.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             return extData;
         }
@@ -124,9 +125,10 @@ namespace spk
             throw std::runtime_error("Can't enable validation layer!\n");
         }
 
-        void System::createInstance()
+        void System::createInstance(const std::vector<const char*> additionalExtensions)
         {
             std::vector<const char*> instanceExtensions = getInstanceExtensions();
+            instanceExtensions.insert(instanceExtensions.end(), additionalExtensions.begin(), additionalExtensions.end());
             vk::InstanceCreateInfo instanceInfo;
             instanceInfo.setEnabledExtensionCount(instanceExtensions.size());
             instanceInfo.setPpEnabledExtensionNames(instanceExtensions.data());
@@ -140,8 +142,8 @@ namespace spk
             vk::ApplicationInfo appInfo;
             appInfo.setApiVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.setApplicationVersion(VK_MAKE_VERSION(0, 0, 1));
-            appInfo.setPApplicationName("Spark application");
-            appInfo.setPEngineName("Spark");
+            appInfo.setPApplicationName("");
+            appInfo.setPEngineName("");
             instanceInfo.setPApplicationInfo(&appInfo);
             if(vk::createInstance(&instanceInfo, nullptr, &instance) != vk::Result::eSuccess) throw std::runtime_error("Failed to create instance!\n");
         }
@@ -250,7 +252,7 @@ namespace spk
             }
             logicalDevice.destroy(nullptr);
             instance.destroy(nullptr);
-            glfwTerminate();
+            //glfwTerminate();
         }
     }
 }
