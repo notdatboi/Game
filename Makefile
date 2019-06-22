@@ -77,3 +77,11 @@ obj/DescriptorPool.o: src/DescriptorPool.cpp \
 	include/SparkIncludeBase.hpp \
 	include/System.hpp
 	$(CC) -c $< -o $@ -g
+
+obj/Swapchain.o: src/Swapchain.cpp \
+	include/Swapchain.hpp \
+	include/SparkIncludeBase.hpp \
+	include/System.hpp \
+	include/Executives.hpp \
+	include/ImageView.hpp
+	$(CC) -c $< -o $@ -g
