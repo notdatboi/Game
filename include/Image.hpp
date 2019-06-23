@@ -25,7 +25,7 @@ namespace spk
             const vk::Semaphore& signalSemaphore,
             const vk::Fence& waitFence,
             const vk::Fence& signalFence,
-            bool oneTimeSubmit = true);
+            bool oneTimeSubmit);
         void update(vk::CommandBuffer& updateBuffer, 
             const vk::Buffer& buffer,
             const vk::Semaphore& waitSemaphore,
@@ -33,7 +33,7 @@ namespace spk
             const vk::Fence& waitFence,
             const vk::Fence& signalFence,
             const vk::PipelineStageFlags dstStageFlags,
-            bool oneTimeSubmit = false);                                          // the buffer data must be tightly packed inside the buffer; offset must be 0
+            bool oneTimeSubmit);                                          // the buffer data must be tightly packed inside the buffer; offset must be 0
         void bindMemory();
         void destroy();
         const vk::Image& getImage() const;

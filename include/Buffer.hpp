@@ -24,7 +24,7 @@ namespace spk
             const vk::Fence& waitFence,
             const vk::Fence& signalFence,
             const vk::PipelineStageFlags dstStageFlags,
-            bool oneTimeSubmit = false);                                          // the buffer data must be tightly packed inside the buffer; offset must be 0
+            bool oneTimeSubmit);                                          // the buffer data must be tightly packed inside the buffer; offset must be 0
         void updateCPUAccessible(const void* data);
         void destroy();
         const vk::Buffer& getBuffer() const;
