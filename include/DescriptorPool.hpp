@@ -24,6 +24,7 @@ namespace spk
             const uint32_t dstDescrtiprorIndex,
             const uint32_t descriptorCount);
         vk::PipelineLayout getPipelineLayout(const std::vector<uint32_t>& descriptorSetLayoutIndices) const;
+        const std::vector<vk::DescriptorSet> getDescriptorSets(const std::vector<uint32_t>& setIndices) const;
         void destroyPipelineLayout(vk::PipelineLayout& layout) const;
 
         void destroy();

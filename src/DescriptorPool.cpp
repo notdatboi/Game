@@ -104,6 +104,16 @@ namespace spk
         return *this;
     }
 
+    const std::vector<vk::DescriptorSet> DescriptorPool::getDescriptorSets(const std::vector<uint32_t>& setIndices) const
+    {
+        std::vector<vk::DescriptorSet> result;
+        for(const auto index : setIndices)
+        {
+            result.push_back(sets[index]);
+        }
+        return result;
+    }
+
     vk::PipelineLayout DescriptorPool::getPipelineLayout(const std::vector<uint32_t>& descriptorSetLayoutIndices) const
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
