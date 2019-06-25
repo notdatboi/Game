@@ -88,6 +88,14 @@ namespace spk
         return *this;
     }
 
+    RenderPass& RenderPass::resetCommandBuffer(const uint32_t index, const bool releaseResources)
+    {
+        if(index > frameCommandBuffers.size() - 1) throw std::out_of_range("Command buffer index is out of range!\n");
+        frameCommandBuffers[index].reset(releaseResources ? vk::CommandBufferResetFlagBits::eReleaseResources : vk::CommandBufferResetFlags());
+
+        return *this;
+    }
+
     const vk::Framebuffer& RenderPass::getFramebuffer(const uint32_t index) const
     {
         return framebuffers[index];

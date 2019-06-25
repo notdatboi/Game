@@ -16,6 +16,8 @@ namespace spk
         RenderPass& beginRecording(const uint32_t index, const uint32_t clearValueCount, const vk::Rect2D renderArea, const vk::Fence& waitFence = vk::Fence());
         RenderPass& nextSubpass(const vk::CommandBuffer& subpassCommandBuffer);          // vkCmdNextSubpass, then vkCmdExecuteCommands
         RenderPass& endRecording();
+        RenderPass& resetCommandBuffer(const uint32_t index, const bool releaseResources);
+
         void destroy();
         ~RenderPass();
 
