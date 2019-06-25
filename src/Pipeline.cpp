@@ -29,6 +29,8 @@ namespace spk
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
 
+        layout = additionalInfo.layout;
+
         vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
         vertexInputInfo.setVertexBindingDescriptionCount(vertexInputState.bindingDescriptions.size())
             .setPVertexBindingDescriptions(vertexInputState.bindingDescriptions.data())
@@ -82,7 +84,7 @@ namespace spk
             .setPDepthStencilState(&depthStencilInfo)
             .setPColorBlendState(&colorBlendInfo)
             .setPDynamicState(&dynamicInfo)
-            .setLayout(additionalInfo.layout)
+            .setLayout(layout)
             .setRenderPass(additionalInfo.renderPass)
             .setSubpass(additionalInfo.subpassIndex);
         
@@ -92,6 +94,11 @@ namespace spk
     const vk::Pipeline& Pipeline::getPipeline() const
     {
         return pipeline;
+    }
+    
+    const vk::PipelineLayout& Pipeline::getLayout() const
+    {
+        return layout;
     }
 
     void Pipeline::destroy()

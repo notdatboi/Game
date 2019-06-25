@@ -97,10 +97,12 @@ namespace spk
             const AdditionalInfo& additionalInfo);
         //vk::PipelineCache generateCache();
         const vk::Pipeline& getPipeline() const;
+        const vk::PipelineLayout& getLayout() const;
         void destroy();
         ~Pipeline();
     private:
         vk::Pipeline pipeline;
+        vk::PipelineLayout layout;
     };
 }
 
