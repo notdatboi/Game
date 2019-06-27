@@ -34,16 +34,23 @@ namespace spk
         return *this;
     }
 
-    DescriptorPool& DescriptorPool::allocateDescriptorSets()
+    DescriptorPool& DescriptorPool::allocateDescriptorSets(const std::vector<uint32_t>& layoutIndices)
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
-        sets.resize(layouts.size());
+        
+        std::vector<vk::DescriptorSetLayout> chosenLayouts;
+        for(int i = 0; i < layoutIndices.size(); ++i)
+        {
+            sets.push_back(vk::DescriptorSet());
+            chosenLayouts.push_back(layouts[layoutIndices[i]]);
+        }
+
         vk::DescriptorSetAllocateInfo info;
         info.setDescriptorPool(pool)
-            .setDescriptorSetCount(layouts.size())
-            .setPSetLayouts(layouts.data());
-        
-        if(logicalDevice.allocateDescriptorSets(&info, sets.data()) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate descriptor sets!\n");
+            .setDescriptorSetCount(layoutIndices.size())
+            .setPSetLayouts(chosenLayouts.data());
+
+        if(logicalDevice.allocateDescriptorSets(&info, &(*(sets.end() - layoutIndices.size()))) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate descriptor sets!\n");
 
         return *this;
     }
