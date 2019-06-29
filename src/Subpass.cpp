@@ -33,15 +33,6 @@ namespace spk
         description.setPDepthStencilAttachment(&depthStencilAttachment);
         description.setPreserveAttachmentCount(preserveAttachments.size());
         description.setPPreserveAttachments(preserveAttachments.data());
-
-        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
-        const vk::CommandPool& pool = system::Executives::getInstance()->getPool();
-
-        vk::CommandBufferAllocateInfo cbInfo;
-        cbInfo.setCommandBufferCount(1);
-        cbInfo.setCommandPool(pool);
-        cbInfo.setLevel(vk::CommandBufferLevel::eSecondary);
-        if(logicalDevice.allocateCommandBuffers(&cbInfo, &secondaryCommandBuffer) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate subpass command buffer!\n");
     }
 
     const vk::SubpassDependency Subpass::next(const Subpass& nextSubpass)
@@ -55,6 +46,30 @@ namespace spk
             .setSrcAccessMask(accessMask)
             .setDstAccessMask(nextSubpass.accessMask);
         return dependency;
+    }
+
+    Subpass& Subpass::bindCommandBuffer(const uint32_t id)
+    {
+        if(secondaryCommandBuffers.size() - 1 < id)
+        {
+            const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+            const vk::CommandPool& pool = system::Executives::getInstance()->getPool();
+
+            auto endIndex = secondaryCommandBuffers.size() - 1;
+            secondaryCommandBuffers.insert(secondaryCommandBuffers.end(), id - secondaryCommandBuffers.size() + 1, vk::CommandBuffer());
+            /*for(int i = secondaryCommandBuffers.size(); i <= id; ++i)
+            {
+                secondaryCommandBuffers.push_back(vk::CommandBuffer());
+            }*/
+            vk::CommandBufferAllocateInfo cbInfo;
+            cbInfo.setCommandBufferCount(id - secondaryCommandBuffers.size() + 1);
+            cbInfo.setCommandPool(pool);
+            cbInfo.setLevel(vk::CommandBufferLevel::eSecondary);
+            if(logicalDevice.allocateCommandBuffers(&cbInfo, &secondaryCommandBuffers[endIndex + 1]) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate subpass command buffer!\n");
+        }
+        boundCommandBuffer = id;
+
+        return *this;
     }
 
     Subpass& Subpass::beginRecording(const vk::RenderPass& renderPass, const vk::Framebuffer& framebuffer, const vk::Fence& waitFence)
@@ -74,14 +89,14 @@ namespace spk
         vk::CommandBufferBeginInfo beginInfo;
         beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eRenderPassContinue)
             .setPInheritanceInfo(&inheritanceInfo);
-        if(secondaryCommandBuffer.begin(&beginInfo) != vk::Result::eSuccess) throw std::runtime_error("Failed to begin command buffer!\n");
+        if(secondaryCommandBuffers[boundCommandBuffer].begin(&beginInfo) != vk::Result::eSuccess) throw std::runtime_error("Failed to begin command buffer!\n");
 
         return *this;
     }
 
     Subpass& Subpass::bindDescriptorSets(const vk::PipelineLayout& layout, const std::vector<vk::DescriptorSet>& descriptorSets, const uint32_t firstSet)
     {
-        secondaryCommandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+        secondaryCommandBuffers[boundCommandBuffer].bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
             layout,
             firstSet,
             descriptorSets.size(),
@@ -94,7 +109,7 @@ namespace spk
 
     Subpass& Subpass::bindIndexBuffer(const vk::Buffer& indexBuffer, const vk::IndexType indexType, const uint32_t offset)
     {
-        secondaryCommandBuffer.bindIndexBuffer(indexBuffer, offset, indexType);
+        secondaryCommandBuffers[boundCommandBuffer].bindIndexBuffer(indexBuffer, offset, indexType);
 
         return *this;
     }
@@ -106,11 +121,11 @@ namespace spk
             if(offsets.size() == 0)
             {
                 std::vector<vk::DeviceSize> newOffsets(vertexBuffers.size(), 0);
-                secondaryCommandBuffer.bindVertexBuffers(firstBinding, vertexBuffers.size(), vertexBuffers.data(), newOffsets.data());
+                secondaryCommandBuffers[boundCommandBuffer].bindVertexBuffers(firstBinding, vertexBuffers.size(), vertexBuffers.data(), newOffsets.data());
             }
             else
             {
-                secondaryCommandBuffer.bindVertexBuffers(firstBinding, vertexBuffers.size(), vertexBuffers.data(), offsets.data());
+                secondaryCommandBuffers[boundCommandBuffer].bindVertexBuffers(firstBinding, vertexBuffers.size(), vertexBuffers.data(), offsets.data());
             }
         }
         else
@@ -118,11 +133,11 @@ namespace spk
             if(offsets.size() == 0)
             {
                 std::vector<vk::DeviceSize> newOffsets(vertexBuffers.size(), 0);
-                secondaryCommandBuffer.bindVertexBuffers(firstBinding, bindingCount, vertexBuffers.data(), newOffsets.data());
+                secondaryCommandBuffers[boundCommandBuffer].bindVertexBuffers(firstBinding, bindingCount, vertexBuffers.data(), newOffsets.data());
             }
             else
             {
-                secondaryCommandBuffer.bindVertexBuffers(firstBinding, bindingCount, vertexBuffers.data(), offsets.data());
+                secondaryCommandBuffers[boundCommandBuffer].bindVertexBuffers(firstBinding, bindingCount, vertexBuffers.data(), offsets.data());
             }
         }
 
@@ -131,36 +146,36 @@ namespace spk
 
     Subpass& Subpass::bindPipeline(const vk::Pipeline& pipeline)
     {
-        secondaryCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        secondaryCommandBuffers[boundCommandBuffer].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
         return *this;
     }
 
     Subpass& Subpass::draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t firstVertex, const uint32_t firstInstance)
     {
-        secondaryCommandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
+        secondaryCommandBuffers[boundCommandBuffer].draw(vertexCount, instanceCount, firstVertex, firstInstance);
 
         return *this;
     }
 
     Subpass& Subpass::drawIndexed(const uint32_t indexCount, const uint32_t instanceCount, const uint32_t firstIndex, const uint32_t firstInstance, const int32_t offset)
     {
-        secondaryCommandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, offset, firstInstance);
+        secondaryCommandBuffers[boundCommandBuffer].drawIndexed(indexCount, instanceCount, firstIndex, offset, firstInstance);
 
         return *this;
     }
 
     Subpass& Subpass::endRecording()
     {
-        secondaryCommandBuffer.end();
+        secondaryCommandBuffers[boundCommandBuffer].end();
 
         return *this;
     }
 
     Subpass& Subpass::reset(const bool releaseResources)
     {
-        if(releaseResources) secondaryCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
-        else secondaryCommandBuffer.reset(vk::CommandBufferResetFlags());
+        if(releaseResources) secondaryCommandBuffers[boundCommandBuffer].reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+        else secondaryCommandBuffers[boundCommandBuffer].reset(vk::CommandBufferResetFlags());
 
         return *this;
     }
@@ -170,19 +185,22 @@ namespace spk
         return description;
     }
 
-    const vk::CommandBuffer& Subpass::getSecondaryCommandBuffer() const
+    const vk::CommandBuffer& Subpass::getSecondaryCommandBuffer(const uint32_t id) const
     {
-        return secondaryCommandBuffer;
+        return secondaryCommandBuffers[id];
     }
 
     void Subpass::destroy()
     {
-        if(secondaryCommandBuffer)
+        for(auto& secondaryCommandBuffer : secondaryCommandBuffers)
         {
-            const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
-            const vk::CommandPool& pool = system::Executives::getInstance()->getPool();
-            logicalDevice.freeCommandBuffers(pool, 1, &secondaryCommandBuffer);
-            secondaryCommandBuffer = vk::CommandBuffer();
+            if(secondaryCommandBuffer)
+            {
+                const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+                const vk::CommandPool& pool = system::Executives::getInstance()->getPool();
+                logicalDevice.freeCommandBuffers(pool, 1, &secondaryCommandBuffer);
+                secondaryCommandBuffer = vk::CommandBuffer();
+            }
         }
     }
 

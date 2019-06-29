@@ -27,6 +27,7 @@ namespace spk
             const vk::PipelineStageFlags stageFlags,
             const vk::AccessFlags accessFlags);
         const vk::SubpassDependency next(const Subpass& nextSubpass);
+        Subpass& bindCommandBuffer(const uint32_t id);
         Subpass& beginRecording(const vk::RenderPass& renderPass, const vk::Framebuffer& framebuffer, const vk::Fence& waitFence = vk::Fence());
         Subpass& bindDescriptorSets(const vk::PipelineLayout& layout, const std::vector<vk::DescriptorSet>& descriptorSets, const uint32_t firstSet = 0);
         Subpass& bindIndexBuffer(const vk::Buffer& indexBuffer, const vk::IndexType indexType, const uint32_t offset = 0);
@@ -41,13 +42,14 @@ namespace spk
 
         // Getters
         const vk::SubpassDescription getDescription() const;
-        const vk::CommandBuffer& getSecondaryCommandBuffer() const;
+        const vk::CommandBuffer& getSecondaryCommandBuffer(const uint32_t id) const;
     private:
         vk::PipelineStageFlags stageMask;
         vk::AccessFlags accessMask;
-        vk::CommandBuffer secondaryCommandBuffer;
+        std::vector<vk::CommandBuffer> secondaryCommandBuffers;
         vk::SubpassDescription description;
         uint32_t index;
+        uint32_t boundCommandBuffer = 0;
     };
 }
 
