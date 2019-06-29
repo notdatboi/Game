@@ -22,6 +22,7 @@ namespace spk
         ~RenderPass();
 
         // Getters
+        const vk::RenderPass& getRenderPass() const;
         const vk::Framebuffer& getFramebuffer(const uint32_t index) const;
         const vk::CommandBuffer& getCommandBuffer(const uint32_t index) const;
     private:

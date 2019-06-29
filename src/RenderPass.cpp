@@ -96,6 +96,11 @@ namespace spk
         return *this;
     }
 
+    const vk::RenderPass& RenderPass::getRenderPass() const
+    {
+        return renderPass;
+    }
+
     const vk::Framebuffer& RenderPass::getFramebuffer(const uint32_t index) const
     {
         return framebuffers[index];
