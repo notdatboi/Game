@@ -32,6 +32,7 @@ namespace spk
             const bool clipped,
             const vk::SwapchainKHR& oldSwapchain = vk::SwapchainKHR());
         const uint32_t acquireNextImageIndex(const vk::Semaphore& signalSemaphore, const vk::Fence& signalFence) const;
+        const std::vector<ImageView>& getImageViews() const;
         void destroy();
         ~Swapchain();
     private:

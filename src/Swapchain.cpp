@@ -128,6 +128,11 @@ namespace spk
         return index;
     }
 
+    const std::vector<ImageView>& Swapchain::getImageViews() const
+    {
+        return swapchainImageViews;
+    }
+
     void Swapchain::destroy()
     {
         const vk::Device logicalDevice = system::System::getInstance()->getLogicalDevice();
