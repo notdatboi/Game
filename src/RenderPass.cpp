@@ -111,6 +111,11 @@ namespace spk
         return frameCommandBuffers[index];
     }
 
+    const uint32_t RenderPass::getFramebufferCount() const
+    {
+        return framebuffers.size();
+    }
+
     void RenderPass::destroy()
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
