@@ -2,6 +2,8 @@
 
 namespace spk
 {
+    Subpass::Subpass(){}
+
     Subpass::Subpass(uint32_t id, 
         const std::vector<vk::AttachmentReference>& inputAttachments, 
         const std::vector<vk::AttachmentReference>& colorAttachments,
