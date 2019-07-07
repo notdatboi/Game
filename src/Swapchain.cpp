@@ -6,7 +6,7 @@ namespace spk
 
     Swapchain::Swapchain(const vk::SurfaceKHR& surface,
         const uint32_t minImageCount,
-        const vk::Format preferredFormat,
+        vk::Format& preferredFormat,
         const vk::Extent2D extent,
         const vk::ImageUsageFlags usageFlags,
         const vk::ImageAspectFlags aspectFlags,
@@ -19,7 +19,7 @@ namespace spk
 
     void Swapchain::create(const vk::SurfaceKHR& surface,
         const uint32_t minImageCount,
-        const vk::Format preferredFormat,
+        vk::Format& preferredFormat,
         const vk::Extent2D extent,
         const vk::ImageUsageFlags usageFlags,
         const vk::ImageAspectFlags aspectFlags,
@@ -57,6 +57,7 @@ namespace spk
         if(!chosenPreferredFormat)
         {
             chosenFormat = surfaceFormats[0];
+            preferredFormat = chosenFormat.format;
 #ifdef DEBUG
             std::cout << "No way to choose preferred swapchain format.\n";
 #endif

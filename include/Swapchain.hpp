@@ -15,7 +15,7 @@ namespace spk
         Swapchain();
         Swapchain(const vk::SurfaceKHR& surface,
             const uint32_t minImageCount,
-            const vk::Format preferredFormat,
+            vk::Format& preferredFormat,
             const vk::Extent2D extent,
             const vk::ImageUsageFlags usageFlags,
             const vk::ImageAspectFlags aspectFlags,
@@ -24,7 +24,7 @@ namespace spk
             const vk::SwapchainKHR& oldSwapchain = vk::SwapchainKHR());
         void create(const vk::SurfaceKHR& surface,
             const uint32_t minImageCount,
-            const vk::Format preferredFormat,
+            vk::Format& preferredFormat,
             const vk::Extent2D extent,
             const vk::ImageUsageFlags usageFlags,
             const vk::ImageAspectFlags aspectFlags,

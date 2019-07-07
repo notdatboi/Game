@@ -15,14 +15,14 @@ namespace spk
         Subpass(uint32_t id, 
             const std::vector<vk::AttachmentReference>& inputAttachments, 
             const std::vector<vk::AttachmentReference>& colorAttachments,
-            const vk::AttachmentReference& depthStencilAttachment,
+            const vk::AttachmentReference* depthStencilAttachment,
             const std::vector<uint32_t>& preserveAttachments,
             const vk::PipelineStageFlags stageFlags,
             const vk::AccessFlags accessFlags);
         void create(uint32_t id, 
             const std::vector<vk::AttachmentReference>& inputAttachments, 
             const std::vector<vk::AttachmentReference>& colorAttachments,
-            const vk::AttachmentReference& depthStencilAttachment,
+            const vk::AttachmentReference* depthStencilAttachment,
             const std::vector<uint32_t>& preserveAttachments,
             const vk::PipelineStageFlags stageFlags,
             const vk::AccessFlags accessFlags);
@@ -44,6 +44,11 @@ namespace spk
         const vk::SubpassDescription getDescription() const;
         const vk::CommandBuffer& getSecondaryCommandBuffer(const uint32_t id) const;
     private:
+        std::vector<vk::AttachmentReference> subpassInputAttachments; 
+        std::vector<vk::AttachmentReference> subpassColorAttachments;
+        vk::AttachmentReference subpassDepthStencilAttachment;
+        std::vector<uint32_t> subpassPreserveAttachments;
+
         vk::PipelineStageFlags stageMask;
         vk::AccessFlags accessMask;
         std::vector<vk::CommandBuffer> secondaryCommandBuffers;

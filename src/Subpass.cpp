@@ -7,7 +7,7 @@ namespace spk
     Subpass::Subpass(uint32_t id, 
         const std::vector<vk::AttachmentReference>& inputAttachments, 
         const std::vector<vk::AttachmentReference>& colorAttachments,
-        const vk::AttachmentReference& depthStencilAttachment,
+        const vk::AttachmentReference* depthStencilAttachment,
         const std::vector<uint32_t>& preserveAttachments,
         const vk::PipelineStageFlags stageFlags,
         const vk::AccessFlags accessFlags)
@@ -18,7 +18,7 @@ namespace spk
     void Subpass::create(uint32_t id, 
         const std::vector<vk::AttachmentReference>& inputAttachments, 
         const std::vector<vk::AttachmentReference>& colorAttachments,
-        const vk::AttachmentReference& depthStencilAttachment,
+        const vk::AttachmentReference* depthStencilAttachment,
         const std::vector<uint32_t>& preserveAttachments,
         const vk::PipelineStageFlags stageFlags,
         const vk::AccessFlags accessFlags)
@@ -26,15 +26,28 @@ namespace spk
         index = id;
         stageMask = stageFlags,
         accessMask = accessFlags;
+        subpassInputAttachments = inputAttachments;
+        subpassColorAttachments = colorAttachments;
+        subpassPreserveAttachments = preserveAttachments;
+
+        if(depthStencilAttachment != nullptr)
+        {
+            subpassDepthStencilAttachment = *depthStencilAttachment;
+            description.setPDepthStencilAttachment(&subpassDepthStencilAttachment);
+        }
+        else
+        {
+            description.setPDepthStencilAttachment(nullptr);
+        }
+
         description.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
-        description.setInputAttachmentCount(inputAttachments.size());
-        description.setPInputAttachments(inputAttachments.data());
-        description.setColorAttachmentCount(colorAttachments.size());
-        description.setPColorAttachments(colorAttachments.data());
+        description.setInputAttachmentCount(subpassInputAttachments.size());
+        description.setPInputAttachments(subpassInputAttachments.data());
+        description.setColorAttachmentCount(subpassColorAttachments.size());
+        description.setPColorAttachments(subpassColorAttachments.data());
         description.setPResolveAttachments(nullptr);
-        description.setPDepthStencilAttachment(&depthStencilAttachment);
-        description.setPreserveAttachmentCount(preserveAttachments.size());
-        description.setPPreserveAttachments(preserveAttachments.data());
+        description.setPreserveAttachmentCount(subpassPreserveAttachments.size());
+        description.setPPreserveAttachments(subpassPreserveAttachments.data());
     }
 
     const vk::SubpassDependency Subpass::next(const Subpass& nextSubpass)
