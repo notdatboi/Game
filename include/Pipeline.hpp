@@ -41,7 +41,11 @@ namespace spk
         // TODO: add depth bias to prevent depth fighting
     };
 
-    //struct MultisampleState{};
+    struct MultisampleState
+    {
+        vk::SampleCountFlagBits rasterizationSampleCount;
+        // bool sampleShadingEnabled and so on
+    };
 
     struct DepthStencilState
     {
@@ -82,6 +86,7 @@ namespace spk
             const InputAssemblyState& inputAssemblyState,
             const ViewportState& viewportState,
             const RasterizationState& rasterizationState,
+            const MultisampleState& multisampleState,
             const DepthStencilState& depthStencilState,
             const ColorBlendState& colorBlendState,
             const DynamicState& dynamicState,
@@ -91,6 +96,7 @@ namespace spk
             const InputAssemblyState& inputAssemblyState,
             const ViewportState& viewportState,
             const RasterizationState& rasterizationState,
+            const MultisampleState& multisampleState,
             const DepthStencilState& depthStencilState,
             const ColorBlendState& colorBlendState,
             const DynamicState& dynamicState,

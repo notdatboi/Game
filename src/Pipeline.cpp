@@ -9,12 +9,13 @@ namespace spk
         const InputAssemblyState& inputAssemblyState,
         const ViewportState& viewportState,
         const RasterizationState& rasterizationState,
+        const MultisampleState& multisampleState,
         const DepthStencilState& depthStencilState,
         const ColorBlendState& colorBlendState,
         const DynamicState& dynamicState,
         const AdditionalInfo& additionalInfo)
     {
-        create(shaderStages, vertexInputState, inputAssemblyState, viewportState, rasterizationState, depthStencilState, colorBlendState, dynamicState, additionalInfo);
+        create(shaderStages, vertexInputState, inputAssemblyState, viewportState, rasterizationState, multisampleState, depthStencilState, colorBlendState, dynamicState, additionalInfo);
     }
 
     void Pipeline::create(const ShaderStages& shaderStages, 
@@ -22,6 +23,7 @@ namespace spk
         const InputAssemblyState& inputAssemblyState,
         const ViewportState& viewportState,
         const RasterizationState& rasterizationState,
+        const MultisampleState& multisampleState,
         const DepthStencilState& depthStencilState,
         const ColorBlendState& colorBlendState,
         const DynamicState& dynamicState,
@@ -56,6 +58,10 @@ namespace spk
             .setDepthBiasEnable(false)
             .setLineWidth(1.0f);
 
+        vk::PipelineMultisampleStateCreateInfo multisampleInfo;
+        multisampleInfo.setRasterizationSamples(multisampleState.rasterizationSampleCount)
+            .setSampleShadingEnable(false);
+
         vk::PipelineDepthStencilStateCreateInfo depthStencilInfo;
         depthStencilInfo.setDepthTestEnable(depthStencilState.enableDepthTest)
             .setDepthWriteEnable(depthStencilState.writeTestResults)
@@ -80,7 +86,7 @@ namespace spk
             .setPTessellationState(nullptr)
             .setPViewportState(&viewportInfo)
             .setPRasterizationState(&rasterizationInfo)
-            .setPMultisampleState(nullptr)
+            .setPMultisampleState(&multisampleInfo)
             .setPDepthStencilState(&depthStencilInfo)
             .setPColorBlendState(&colorBlendInfo)
             .setPDynamicState(&dynamicInfo)
