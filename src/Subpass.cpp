@@ -65,19 +65,20 @@ namespace spk
 
     Subpass& Subpass::bindCommandBuffer(const uint32_t id)
     {
-        if(secondaryCommandBuffers.size() - 1 < id)
+        if((static_cast<long long>(secondaryCommandBuffers.size()) - 1LL) < id)
         {
             const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
             const vk::CommandPool& pool = system::Executives::getInstance()->getPool();
 
-            auto endIndex = secondaryCommandBuffers.size() - 1;
+            auto endIndex = static_cast<long long>(secondaryCommandBuffers.size()) - 1;
+            auto count = id - secondaryCommandBuffers.size() + 1;
             secondaryCommandBuffers.insert(secondaryCommandBuffers.end(), id - secondaryCommandBuffers.size() + 1, vk::CommandBuffer());
             /*for(int i = secondaryCommandBuffers.size(); i <= id; ++i)
             {
                 secondaryCommandBuffers.push_back(vk::CommandBuffer());
             }*/
             vk::CommandBufferAllocateInfo cbInfo;
-            cbInfo.setCommandBufferCount(id - secondaryCommandBuffers.size() + 1);
+            cbInfo.setCommandBufferCount(count);
             cbInfo.setCommandPool(pool);
             cbInfo.setLevel(vk::CommandBufferLevel::eSecondary);
             if(logicalDevice.allocateCommandBuffers(&cbInfo, &secondaryCommandBuffers[endIndex + 1]) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate subpass command buffer!\n");
