@@ -70,11 +70,17 @@ namespace spk
 
         return *this;
     }
-
     RenderPass& RenderPass::nextSubpass(const vk::CommandBuffer& subpassCommandBuffer)
     {
         vk::CommandBuffer& currentCB = frameCommandBuffers[recordingBufferIndex];
         currentCB.nextSubpass(vk::SubpassContents::eSecondaryCommandBuffers);
+
+        return *this;
+    }
+
+    RenderPass& RenderPass::executeCommandBuffer(const vk::CommandBuffer& subpassCommandBuffer)
+    {
+        vk::CommandBuffer& currentCB = frameCommandBuffers[recordingBufferIndex];
         currentCB.executeCommands(1, &subpassCommandBuffer);
 
         return *this;
