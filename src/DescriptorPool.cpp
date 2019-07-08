@@ -4,19 +4,20 @@ namespace spk
 {
     DescriptorPool::DescriptorPool(){}
 
-    DescriptorPool::DescriptorPool(const uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes)
+    DescriptorPool::DescriptorPool(const uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes, const vk::DescriptorPoolCreateFlags flags)
     {
-        create(maxSetCount, poolSizes);
+        create(maxSetCount, poolSizes, flags);
     }
 
-    void DescriptorPool::create(const uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes)
+    void DescriptorPool::create(const uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes, const vk::DescriptorPoolCreateFlags flags)
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
 
         vk::DescriptorPoolCreateInfo poolInfo;
         poolInfo.setMaxSets(maxSetCount)
             .setPoolSizeCount(poolSizes.size())
-            .setPPoolSizes(poolSizes.data());
+            .setPPoolSizes(poolSizes.data())
+            .setFlags(flags);
         
         if(logicalDevice.createDescriptorPool(&poolInfo, nullptr, &pool) != vk::Result::eSuccess) throw std::runtime_error("Failed to create descriptor pool!\n");
     }

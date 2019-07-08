@@ -10,8 +10,8 @@ namespace spk
     {
     public:
         DescriptorPool();
-        DescriptorPool(const uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes);
-        void create(const uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes);
+        DescriptorPool(const uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes, const vk::DescriptorPoolCreateFlags flags = vk::DescriptorPoolCreateFlags());
+        void create(const uint32_t maxSetCount, const std::vector<vk::DescriptorPoolSize>& poolSizes, const vk::DescriptorPoolCreateFlags flags = vk::DescriptorPoolCreateFlags());
         DescriptorPool& addDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings);
         DescriptorPool& allocateDescriptorSets(const std::vector<uint32_t>& layoutIndices);
         DescriptorPool& writeDescriptorSetImage(const uint32_t index, const uint32_t binding, const vk::DescriptorType type, const vk::DescriptorImageInfo& imageInfo, const uint32_t descriptorIndex = 0, const uint32_t descriptorCount = 1);
