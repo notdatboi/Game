@@ -89,6 +89,7 @@ namespace spk
     RenderPass& RenderPass::endRecording()
     {
         vk::CommandBuffer& currentCB = frameCommandBuffers[recordingBufferIndex];
+        currentCB.endRenderPass();
         currentCB.end();
         
         return *this;
