@@ -134,6 +134,11 @@ namespace spk
         return swapchainImageViews;
     }
 
+    const vk::SwapchainKHR& Swapchain::getSwapchain() const
+    {
+        return swapchain;
+    }
+
     void Swapchain::destroy()
     {
         const vk::Device logicalDevice = system::System::getInstance()->getLogicalDevice();
