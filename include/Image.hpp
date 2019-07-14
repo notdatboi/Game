@@ -18,7 +18,7 @@ namespace spk
         Image(const Image& img);
         Image& operator=(const Image& img);
         void create(const vk::Extent3D cExtent, const vk::Format cFormat, const vk::ImageUsageFlags cUsage, const vk::ImageAspectFlags cAspectFlags);
-        static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format>& formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
+        static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
         void changeLayout(vk::CommandBuffer& layoutChangeBuffer, 
             const vk::ImageLayout newLayout,
             const vk::Semaphore& waitSemaphore,

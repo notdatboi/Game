@@ -2,7 +2,7 @@
 
 namespace spk
 {
-    const std::optional<vk::Format> Image::getSupportedFormat(const std::vector<vk::Format>& formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags)
+    const std::optional<vk::Format> Image::getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags)
     {
         const vk::PhysicalDevice& physicalDevice = system::System::getInstance()->getPhysicalDevice();
         std::optional<vk::Format> result;
