@@ -42,7 +42,7 @@ namespace spk
         return *this;
     }
 
-    RenderPass& RenderPass::beginRecording(const uint32_t index, const uint32_t clearValueCount, const vk::Rect2D renderArea, const vk::Fence& waitFence)
+    RenderPass& RenderPass::beginRecording(const uint32_t index, const std::vector<vk::ClearValue> clearValues ,const vk::Rect2D renderArea, const vk::Fence& waitFence)
     {
         if(index > frameCommandBuffers.size() - 1) throw std::out_of_range("Command buffer index is out of range!\n");
         recordingBufferIndex = index;
@@ -58,13 +58,12 @@ namespace spk
 
         if(currentCB.begin(&beginInfo) != vk::Result::eSuccess) throw std::runtime_error("Failed to begin command buffer!\n");
 
-        std::vector<vk::ClearValue> clearVals(clearValueCount, vk::ClearValue());
         vk::RenderPassBeginInfo renderBeginInfo;
         renderBeginInfo.setRenderPass(renderPass)
             .setFramebuffer(framebuffers[recordingBufferIndex])
             .setRenderArea(renderArea)
-            .setClearValueCount(clearVals.size())
-            .setPClearValues(clearVals.data());
+            .setClearValueCount(clearValues.size())
+            .setPClearValues(clearValues.data());
 
         currentCB.beginRenderPass(&renderBeginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
 

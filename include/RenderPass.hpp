@@ -13,7 +13,7 @@ namespace spk
             const std::vector<vk::SubpassDescription>& subpasses,
             const std::vector<vk::SubpassDependency>& dependencies);
         RenderPass& addFramebuffer(const std::vector<vk::ImageView>& attachments, const vk::Extent2D extent);
-        RenderPass& beginRecording(const uint32_t index, const uint32_t clearValueCount, const vk::Rect2D renderArea, const vk::Fence& waitFence = vk::Fence());
+        RenderPass& beginRecording(const uint32_t index, const std::vector<vk::ClearValue> clearValues, const vk::Rect2D renderArea, const vk::Fence& waitFence = vk::Fence());
         RenderPass& nextSubpass(const vk::CommandBuffer& subpassCommandBuffer);
         RenderPass& executeCommandBuffer(const vk::CommandBuffer& subpassCommandBuffer);
         RenderPass& endRecording();
