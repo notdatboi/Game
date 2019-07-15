@@ -52,6 +52,7 @@ namespace spk
             uint32_t findMemoryTypeIndex(const vk::MemoryPropertyFlags flags, uint32_t memoryTypeBits) const;
             index_t allocateMemoryBlock(const MemoryAllocationInfo& info);                                  // allocates memory from free positions in the memory array or creates new device memory object
             void allocateMemoryBlock(const MemoryAllocationInfo& info, index_t index);                      // allocates memory from memory array's specific position
+            const vk::DeviceSize getAdjustedMemorySize(const MemoryAllocationInfo& info) const;
 
             static std::unique_ptr<MemoryManager> instance;
             vk::PhysicalDeviceMemoryProperties memoryProperties;

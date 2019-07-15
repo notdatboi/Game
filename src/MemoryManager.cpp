@@ -36,6 +36,12 @@ namespace spk
             throw std::runtime_error("Failed to find requested memory propery flags!\n");
         }
 
+        const vk::DeviceSize MemoryManager::getAdjustedMemorySize(const MemoryAllocationInfo& info) const
+        {
+            if(info.size % info.alignment == 0) return info.size;
+            return (info.size / info.alignment + 1) * info.alignment;
+        }
+
         index_t MemoryManager::allocateMemoryBlock(const MemoryAllocationInfo& info)
         {
             index_t index;
@@ -59,7 +65,7 @@ namespace spk
         {
             const vk::Device& logicalDevice = System::getInstance()->getLogicalDevice();
             vk::MemoryAllocateInfo vkInfo;
-            vkInfo.setAllocationSize(info.size);
+            vkInfo.setAllocationSize(getAdjustedMemorySize(info));
             vkInfo.setMemoryTypeIndex(findMemoryTypeIndex(info.flags, info.memoryTypeBits));
             if(logicalDevice.allocateMemory(&vkInfo, nullptr, &memoryArray[index]) != vk::Result::eSuccess)
             {
@@ -120,14 +126,14 @@ namespace spk
                     memoryPartitionsCount[index]++;
                     freedIndices.erase(freedIndices.begin());
                 }
-                pendingAllocations[sFlags] = {index, allocationInfo.size, allocationInfo.flags, allocationInfo.memoryTypeBits, allocationInfo.alignment};
+                pendingAllocations[sFlags] = {index, getAdjustedMemorySize(allocationInfo), allocationInfo.flags, allocationInfo.memoryTypeBits, allocationInfo.alignment};
             }
             else
             {
                 if((pendingAllocations[sFlags].memoryTypeBits & allocationInfo.memoryTypeBits) && pendingAllocations[sFlags].alignment == allocationInfo.alignment)
                 {
                     offset = pendingAllocations[sFlags].size;
-                    pendingAllocations[sFlags].size += allocationInfo.size;
+                    pendingAllocations[sFlags].size += getAdjustedMemorySize(allocationInfo);
                     pendingAllocations[sFlags].memoryTypeBits &= allocationInfo.memoryTypeBits;
                     index = pendingAllocations[sFlags].index;
                     memoryPartitionsCount[index]++;
@@ -147,7 +153,7 @@ namespace spk
                         memoryPartitionsCount[index]++;
                         freedIndices.erase(freedIndices.begin());
                     }
-                    pendingAllocations[sFlags] = {index, allocationInfo.size, allocationInfo.flags, allocationInfo.memoryTypeBits, allocationInfo.alignment};
+                    pendingAllocations[sFlags] = {index, getAdjustedMemorySize(allocationInfo), allocationInfo.flags, allocationInfo.memoryTypeBits, allocationInfo.alignment};
                 }
             }
             lazilyAllocatedIndices.insert(index);
