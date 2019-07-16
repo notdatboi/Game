@@ -5,10 +5,10 @@ namespace spk
     Subpass::Subpass(){}
 
     Subpass::Subpass(uint32_t id, 
-        const std::vector<vk::AttachmentReference>& inputAttachments, 
-        const std::vector<vk::AttachmentReference>& colorAttachments,
+        const std::vector<vk::AttachmentReference> inputAttachments, 
+        const std::vector<vk::AttachmentReference> colorAttachments,
         const vk::AttachmentReference* depthStencilAttachment,
-        const std::vector<uint32_t>& preserveAttachments,
+        const std::vector<uint32_t> preserveAttachments,
         const vk::PipelineStageFlags stageFlags,
         const vk::AccessFlags accessFlags)
     {
@@ -16,10 +16,10 @@ namespace spk
     }
 
     void Subpass::create(uint32_t id, 
-        const std::vector<vk::AttachmentReference>& inputAttachments, 
-        const std::vector<vk::AttachmentReference>& colorAttachments,
+        const std::vector<vk::AttachmentReference> inputAttachments, 
+        const std::vector<vk::AttachmentReference> colorAttachments,
         const vk::AttachmentReference* depthStencilAttachment,
-        const std::vector<uint32_t>& preserveAttachments,
+        const std::vector<uint32_t> preserveAttachments,
         const vk::PipelineStageFlags stageFlags,
         const vk::AccessFlags accessFlags)
     {
