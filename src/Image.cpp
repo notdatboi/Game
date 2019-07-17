@@ -147,16 +147,8 @@ namespace spk
         logicalDevice.bindImageMemory(image, memory, memoryData.offset);
     }
 
-    void Image::changeLayout(vk::CommandBuffer& layoutChangeBuffer, 
-        const vk::ImageLayout newLayout,
-        const vk::Semaphore& waitSemaphore,
-        const vk::Semaphore& signalSemaphore,
-        const vk::Fence& waitFence,
-        const vk::Fence& signalFence,
-        bool oneTimeSubmit)
+    void Image::recordLayoutChangeCommands(vk::CommandBuffer& layoutChangeBuffer, const vk::ImageLayout newLayout)
     {
-        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
-        const vk::Queue& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
         vk::PipelineStageFlags srcStage, dstStage;
         vk::AccessFlags srcAccess, dstAccess;
         if(layout == vk::ImageLayout::eUndefined)
@@ -214,6 +206,25 @@ namespace spk
         barrier.setImage(image);
         barrier.setSubresourceRange(subresourceRange);
         
+        layoutChangeBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), 0, nullptr, 0, nullptr, 1, &barrier);
+    }
+
+    void Image::reportLayoutChange(const vk::ImageLayout newLayout)
+    {
+        layout = newLayout;
+    }
+
+    void Image::changeLayout(vk::CommandBuffer& layoutChangeBuffer, 
+        const vk::ImageLayout newLayout,
+        const vk::Semaphore& waitSemaphore,
+        const vk::Semaphore& signalSemaphore,
+        const vk::Fence& waitFence,
+        const vk::Fence& signalFence,
+        bool oneTimeSubmit)
+    {
+        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        const vk::Queue& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
+        
         if(waitFence)
         {
             if(logicalDevice.waitForFences(1, &waitFence, true, ~0U) != vk::Result::eSuccess) throw std::runtime_error("Failed to wait for fences!\n");
@@ -226,8 +237,23 @@ namespace spk
             info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
         }
         if(layoutChangeBuffer.begin(&info) != vk::Result::eSuccess) throw std::runtime_error("Failed to begin command buffer!\n");
-        layoutChangeBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), 0, nullptr, 0, nullptr, 1, &barrier);
+        recordLayoutChangeCommands(layoutChangeBuffer, newLayout);
         layoutChangeBuffer.end();
+
+        vk::PipelineStageFlags dstStage;
+        if(newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
+        {
+            dstStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+        }
+        else if(newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+        {
+            dstStage = vk::PipelineStageFlagBits::eFragmentShader;
+        }
+        else if(newLayout == vk::ImageLayout::eTransferDstOptimal)
+        {
+            dstStage = vk::PipelineStageFlagBits::eTransfer;
+        }
+        else throw std::invalid_argument("Unsupported layout transition.\n");
 
         vk::SubmitInfo submit;
         if(waitSemaphore)
@@ -263,7 +289,7 @@ namespace spk
             if(graphicsQueue.submit(1, &submit, vk::Fence()) != vk::Result::eSuccess) throw std::runtime_error("Failed to submit queue!\n");
         }
 
-        layout = newLayout;
+        reportLayoutChange(newLayout);
     }
 
     void Image::update(vk::CommandBuffer& updateBuffer, 

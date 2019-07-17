@@ -19,7 +19,11 @@ namespace spk
         Image& operator=(const Image& img);
         void create(const vk::Extent3D cExtent, const vk::Format cFormat, const vk::ImageUsageFlags cUsage, const vk::ImageAspectFlags cAspectFlags);
         static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
-        void changeLayout(vk::CommandBuffer& layoutChangeBuffer, 
+
+        void recordLayoutChangeCommands(vk::CommandBuffer& layoutChangeBuffer, const vk::ImageLayout newLayout);    // just records layout change command buffer, user must report the new layot when it is changed
+        void reportLayoutChange(const vk::ImageLayout newLayout);                                                   // reports, that layout has been changed using the command buffer, recorded by recordLayoutChangeCommands function
+
+        void changeLayout(vk::CommandBuffer& layoutChangeBuffer,        // records layout change command buffer and executes it immediately
             const vk::ImageLayout newLayout,
             const vk::Semaphore& waitSemaphore,
             const vk::Semaphore& signalSemaphore,
