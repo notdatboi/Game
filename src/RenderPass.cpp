@@ -117,6 +117,11 @@ namespace spk
         return frameCommandBuffers[index];
     }
 
+    vk::CommandBuffer& RenderPass::getCommandBuffer(const uint32_t index)
+    {
+        return frameCommandBuffers[index];
+    }
+
     const uint32_t RenderPass::getFramebufferCount() const
     {
         return framebuffers.size();
