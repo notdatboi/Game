@@ -43,6 +43,7 @@ namespace spk
         // Getters
         const vk::SubpassDescription getDescription() const;
         const vk::CommandBuffer& getSecondaryCommandBuffer(const uint32_t id) const;
+        //vk::CommandBuffer& getSecondaryCommandBuffer(const uint32_t id);
     private:
         std::vector<vk::AttachmentReference> subpassInputAttachments; 
         std::vector<vk::AttachmentReference> subpassColorAttachments;

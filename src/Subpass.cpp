@@ -206,6 +206,11 @@ namespace spk
         return secondaryCommandBuffers[id];
     }
 
+    //vk::CommandBuffer& Subpass::getSecondaryCommandBuffer(const uint32_t id)
+    //{
+    //    return secondaryCommandBuffers[id];
+    //}
+
     void Subpass::destroy()
     {
         for(auto& secondaryCommandBuffer : secondaryCommandBuffers)
