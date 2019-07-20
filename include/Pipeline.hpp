@@ -25,7 +25,10 @@ namespace spk
         bool enablePrimitiveRestart;
     };
 
-    //struct TesselationState{};
+    struct TessellationState
+    {
+        uint32_t patchControlPointCount;
+    };
 
     struct ViewportState
     {
@@ -84,6 +87,7 @@ namespace spk
         Pipeline(const ShaderStages& shaderStages, 
             const VertexInputState& vertexInputState,
             const InputAssemblyState& inputAssemblyState,
+            const TessellationState& tessellationState,
             const ViewportState& viewportState,
             const RasterizationState& rasterizationState,
             const MultisampleState& multisampleState,
@@ -94,6 +98,7 @@ namespace spk
         void create(const ShaderStages& shaderStages, 
             const VertexInputState& vertexInputState,
             const InputAssemblyState& inputAssemblyState,
+            const TessellationState& tessellationState,
             const ViewportState& viewportState,
             const RasterizationState& rasterizationState,
             const MultisampleState& multisampleState,

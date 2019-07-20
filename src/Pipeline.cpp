@@ -7,6 +7,7 @@ namespace spk
     Pipeline::Pipeline(const ShaderStages& shaderStages, 
         const VertexInputState& vertexInputState,
         const InputAssemblyState& inputAssemblyState,
+        const TessellationState& tessellationState,
         const ViewportState& viewportState,
         const RasterizationState& rasterizationState,
         const MultisampleState& multisampleState,
@@ -15,12 +16,13 @@ namespace spk
         const DynamicState& dynamicState,
         const AdditionalInfo& additionalInfo)
     {
-        create(shaderStages, vertexInputState, inputAssemblyState, viewportState, rasterizationState, multisampleState, depthStencilState, colorBlendState, dynamicState, additionalInfo);
+        create(shaderStages, vertexInputState, inputAssemblyState, tessellationState, viewportState, rasterizationState, multisampleState, depthStencilState, colorBlendState, dynamicState, additionalInfo);
     }
 
     void Pipeline::create(const ShaderStages& shaderStages, 
         const VertexInputState& vertexInputState,
         const InputAssemblyState& inputAssemblyState,
+        const TessellationState& tessellationState,
         const ViewportState& viewportState,
         const RasterizationState& rasterizationState,
         const MultisampleState& multisampleState,
@@ -42,6 +44,9 @@ namespace spk
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
         inputAssemblyInfo.setTopology(inputAssemblyState.topology)
             .setPrimitiveRestartEnable(inputAssemblyState.enablePrimitiveRestart);
+
+        vk::PipelineTessellationStateCreateInfo tessellationInfo;
+        tessellationInfo.setPatchControlPoints(tessellationState.patchControlPointCount);
 
         vk::PipelineViewportStateCreateInfo viewportInfo;
         viewportInfo.setViewportCount(1)
@@ -83,7 +88,7 @@ namespace spk
             .setPStages(shaderStages.stages.data())
             .setPVertexInputState(&vertexInputInfo)
             .setPInputAssemblyState(&inputAssemblyInfo)
-            .setPTessellationState(nullptr)
+            .setPTessellationState(&tessellationInfo)
             .setPViewportState(&viewportInfo)
             .setPRasterizationState(&rasterizationInfo)
             .setPMultisampleState(&multisampleInfo)
