@@ -194,8 +194,8 @@ namespace spk
             logicalDeviceCreateInfo.setPQueueCreateInfos(queueCreateInfos.data());
 
             vk::PhysicalDeviceFeatures deviceFeatures;
-            // deviceFeatures.setGeometryShader(true);
-            deviceFeatures.setTessellationShader(true);
+            deviceFeatures.setGeometryShader(true)
+                .setTessellationShader(true);
             // physicalDeviceFeatures
             logicalDeviceCreateInfo.setPEnabledFeatures(&deviceFeatures);
             if(physicalDevice.createDevice(&logicalDeviceCreateInfo, nullptr, &logicalDevice) != vk::Result::eSuccess)
