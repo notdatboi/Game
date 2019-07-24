@@ -69,14 +69,14 @@ namespace spk
         memoryData.offset = ~0;
     }
 
-    Image::Image(const vk::Extent3D cExtent, const vk::Format cFormat, const vk::ImageUsageFlags cUsage, const vk::ImageAspectFlags cAspectFlags)
+    Image::Image(const vk::Extent3D cExtent, const vk::Format cFormat, const vk::ImageUsageFlags cUsage, const vk::ImageAspectFlags cAspectFlags, const uint32_t cMipLevelCount)
     {
         memoryData.index = ~0;
         memoryData.offset = ~0;
-        create(cExtent, cFormat, cUsage, cAspectFlags);
+        create(cExtent, cFormat, cUsage, cAspectFlags, cMipLevelCount);
     }
 
-    void Image::create(const vk::Extent3D cExtent, const vk::Format cFormat, const vk::ImageUsageFlags cUsage, const vk::ImageAspectFlags cAspectFlags)
+    void Image::create(const vk::Extent3D cExtent, const vk::Format cFormat, const vk::ImageUsageFlags cUsage, const vk::ImageAspectFlags cAspectFlags, const uint32_t cMipLevelCount)
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
         extent = cExtent;
@@ -84,7 +84,7 @@ namespace spk
 
         subresourceRange.setAspectMask(cAspectFlags);
         subresourceRange.setBaseMipLevel(0);
-        subresourceRange.setLevelCount(1);
+        subresourceRange.setLevelCount(cMipLevelCount);
         subresourceRange.setBaseArrayLayer(0);
         subresourceRange.setLayerCount(1);
 
@@ -153,7 +153,7 @@ namespace spk
         vk::AccessFlags srcAccess, dstAccess;
         if(layout == vk::ImageLayout::eUndefined)
         {
-            srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
+            srcStage = vk::PipelineStageFlagBits::eTransfer;
             if(newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
             {
                 dstStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
@@ -290,6 +290,152 @@ namespace spk
         }
 
         reportLayoutChange(newLayout);
+    }
+
+    void Image::generateMipmap(vk::CommandBuffer& mipmapGenerateBuffer, 
+        const vk::Filter filter,
+        const vk::Semaphore& waitSemaphore,
+        const vk::Semaphore& signalSemaphore,
+        const vk::Fence& waitFence,
+        const vk::Fence& signalFence,
+        bool oneTimeSubmit)
+    {
+        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        const vk::Queue& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
+        
+        if(waitFence)
+        {
+            if(logicalDevice.waitForFences(1, &waitFence, true, ~0U) != vk::Result::eSuccess) throw std::runtime_error("Failed to wait for fences!\n");
+            if(logicalDevice.resetFences(1, &waitFence) != vk::Result::eSuccess) throw std::runtime_error("Failed to reset fence!\n");
+        }
+
+        vk::CommandBufferBeginInfo info;
+        if(oneTimeSubmit)
+        {
+            info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+        }
+        if(mipmapGenerateBuffer.begin(&info) != vk::Result::eSuccess) throw std::runtime_error("Failed to begin command buffer!\n");
+
+        uint32_t currentMipWidth = extent.width, currentMipHeight = extent.height;
+
+        vk::ImageMemoryBarrier preparationBarrier;
+
+        for (size_t i = 1; i < subresourceRange.levelCount; i++)
+        {
+            vk::ImageSubresourceRange preparationRange;
+            preparationRange = subresourceRange;
+            preparationRange.setBaseMipLevel(i - 1)
+                .setLevelCount(1);
+            preparationBarrier.setImage(image)
+                .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .setSubresourceRange(preparationRange)
+                .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+                .setDstAccessMask(vk::AccessFlagBits::eTransferRead)
+                .setOldLayout(layout)
+                .setNewLayout(vk::ImageLayout::eTransferSrcOptimal);
+            mipmapGenerateBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, 
+                vk::PipelineStageFlagBits::eTransfer, 
+                vk::DependencyFlags(),
+                0, nullptr,
+                0, nullptr,
+                1, &preparationBarrier);
+            
+            vk::ImageBlit blit;
+            vk::ImageSubresourceLayers srcSubLayers, dstSubLayers;
+            srcSubLayers.setAspectMask(subresourceRange.aspectMask)
+                .setMipLevel(i - 1)
+                .setBaseArrayLayer(0)
+                .setLayerCount(1);
+            dstSubLayers.setAspectMask(subresourceRange.aspectMask)
+                .setMipLevel(i)
+                .setBaseArrayLayer(0)
+                .setLayerCount(1);
+            std::array<vk::Offset3D, 2> srcOffsets, dstOffsets;
+            srcOffsets[0] = vk::Offset3D(0, 0, 1);
+            srcOffsets[1] = vk::Offset3D(currentMipWidth, currentMipHeight, 1);
+            dstOffsets[0] = vk::Offset3D(0, 0, 1);
+            dstOffsets[1] = vk::Offset3D(currentMipWidth > 1 ? currentMipWidth / 2 : 1, currentMipHeight > 1 ? currentMipHeight / 2 : 1, 1);
+            blit.setSrcOffsets(srcOffsets)
+                .setSrcSubresource(srcSubLayers)
+                .setDstSubresource(dstSubLayers)
+                .setDstOffsets(dstOffsets);
+            
+            mipmapGenerateBuffer.blitImage(image, vk::ImageLayout::eTransferSrcOptimal, image, vk::ImageLayout::eTransferDstOptimal, 1, &blit, filter);
+            preparationBarrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+            preparationBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+            preparationBarrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+            preparationBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+            mipmapGenerateBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, 
+                vk::PipelineStageFlagBits::eFragmentShader, 
+                vk::DependencyFlags(),
+                0, nullptr,
+                0, nullptr,
+                1, &preparationBarrier);
+
+            if (currentMipWidth > 1)
+            {
+                currentMipWidth /= 2;
+            }
+            if (currentMipHeight > 1)
+            {
+                currentMipHeight /= 2;
+            }
+        }
+        
+        preparationBarrier.subresourceRange.baseMipLevel = subresourceRange.levelCount - 1;
+        preparationBarrier.setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+            .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+            .setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+        mipmapGenerateBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, 
+            vk::PipelineStageFlagBits::eFragmentShader, 
+            vk::DependencyFlags(),
+            0, nullptr,
+            0, nullptr,
+            1, &preparationBarrier);
+        
+        mipmapGenerateBuffer.end();
+
+        vk::PipelineStageFlags dstStage;
+        dstStage = vk::PipelineStageFlagBits::eFragmentShader;
+
+        vk::SubmitInfo submit;
+        if(waitSemaphore)
+        {
+            submit.setWaitSemaphoreCount(1);
+            submit.setPWaitSemaphores(&waitSemaphore);
+        }
+        else
+        {
+            submit.setWaitSemaphoreCount(0);
+            submit.setPWaitSemaphores(nullptr);
+        }
+        submit.setPWaitDstStageMask(&dstStage);
+        submit.setCommandBufferCount(1);
+        submit.setPCommandBuffers(&mipmapGenerateBuffer);
+        if(signalSemaphore)
+        {
+            submit.setSignalSemaphoreCount(1);
+            submit.setPSignalSemaphores(&signalSemaphore);
+        }
+        else
+        {
+            submit.setSignalSemaphoreCount(0);
+            submit.setPSignalSemaphores(nullptr);
+        }
+
+        if(signalFence)
+        {
+            if(graphicsQueue.submit(1, &submit, signalFence) != vk::Result::eSuccess) throw std::runtime_error("Failed to submit queue!\n");
+        }
+        else
+        {
+            if(graphicsQueue.submit(1, &submit, vk::Fence()) != vk::Result::eSuccess) throw std::runtime_error("Failed to submit queue!\n");
+        }
+
+        reportLayoutChange(vk::ImageLayout::eShaderReadOnlyOptimal);
     }
 
     void Image::update(vk::CommandBuffer& updateBuffer, 
