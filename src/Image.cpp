@@ -300,6 +300,11 @@ namespace spk
         const vk::Fence& signalFence,
         bool oneTimeSubmit)
     {
+        if(subresourceRange.levelCount == 1)
+        {
+            changeLayout(mipmapGenerateBuffer, vk::ImageLayout::eShaderReadOnlyOptimal, waitSemaphore, signalSemaphore, waitFence, signalFence, oneTimeSubmit);
+            return;
+        }
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const vk::Queue& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
         
@@ -352,9 +357,9 @@ namespace spk
                 .setBaseArrayLayer(0)
                 .setLayerCount(1);
             std::array<vk::Offset3D, 2> srcOffsets, dstOffsets;
-            srcOffsets[0] = vk::Offset3D(0, 0, 1);
+            srcOffsets[0] = vk::Offset3D(0, 0, 0);
             srcOffsets[1] = vk::Offset3D(currentMipWidth, currentMipHeight, 1);
-            dstOffsets[0] = vk::Offset3D(0, 0, 1);
+            dstOffsets[0] = vk::Offset3D(0, 0, 0);
             dstOffsets[1] = vk::Offset3D(currentMipWidth > 1 ? currentMipWidth / 2 : 1, currentMipHeight > 1 ? currentMipHeight / 2 : 1, 1);
             blit.setSrcOffsets(srcOffsets)
                 .setSrcSubresource(srcSubLayers)
