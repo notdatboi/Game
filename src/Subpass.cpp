@@ -100,7 +100,9 @@ namespace spk
         inheritanceInfo.setRenderPass(renderPass)
             .setSubpass(index)
             .setFramebuffer(framebuffer)
-            .setOcclusionQueryEnable(false);
+            .setOcclusionQueryEnable(true)
+            .setQueryFlags(vk::QueryControlFlags())
+            .setPipelineStatistics(vk::QueryPipelineStatisticFlagBits::eFragmentShaderInvocations);
 
         vk::CommandBufferBeginInfo beginInfo;
         beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eRenderPassContinue)

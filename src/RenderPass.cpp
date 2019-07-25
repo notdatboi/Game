@@ -42,7 +42,7 @@ namespace spk
         return *this;
     }
 
-    RenderPass& RenderPass::beginRecording(const uint32_t index, const std::vector<vk::ClearValue> clearValues ,const vk::Rect2D renderArea, const vk::Fence& waitFence)
+    RenderPass& RenderPass::beginRecording(const uint32_t index, const vk::Fence& waitFence)
     {
         if(index > frameCommandBuffers.size() - 1) throw std::out_of_range("Command buffer index is out of range!\n");
         recordingBufferIndex = index;
@@ -58,6 +58,13 @@ namespace spk
 
         if(currentCB.begin(&beginInfo) != vk::Result::eSuccess) throw std::runtime_error("Failed to begin command buffer!\n");
 
+        return *this;
+    }
+
+    RenderPass& RenderPass::beginPass(const std::vector<vk::ClearValue> clearValues, const vk::Rect2D renderArea)
+    {
+        vk::CommandBuffer& currentCB = frameCommandBuffers[recordingBufferIndex];
+
         vk::RenderPassBeginInfo renderBeginInfo;
         renderBeginInfo.setRenderPass(renderPass)
             .setFramebuffer(framebuffers[recordingBufferIndex])
@@ -69,6 +76,28 @@ namespace spk
 
         return *this;
     }
+
+    RenderPass& RenderPass::resetQueries(const vk::QueryPool& pool, const uint32_t firstQueryIndex, const uint32_t queryCount)
+    {
+        frameCommandBuffers[recordingBufferIndex].resetQueryPool(pool, firstQueryIndex, queryCount);
+
+        return *this;
+    }
+
+    RenderPass& RenderPass::beginQuery(const vk::QueryPool& pool, const uint32_t queryIndex, const vk::QueryControlFlags flags)
+    {
+        frameCommandBuffers[recordingBufferIndex].beginQuery(pool, queryIndex, flags);
+
+        return *this;
+    }
+
+    RenderPass& RenderPass::endQuery(const vk::QueryPool& pool, const uint32_t queryIndex)
+    {
+        frameCommandBuffers[recordingBufferIndex].endQuery(pool, queryIndex);
+
+        return *this;
+    }
+
     RenderPass& RenderPass::nextSubpass()
     {
         vk::CommandBuffer& currentCB = frameCommandBuffers[recordingBufferIndex];
@@ -85,10 +114,17 @@ namespace spk
         return *this;
     }
 
-    RenderPass& RenderPass::endRecording()
+    RenderPass& RenderPass::endPass()
     {
         vk::CommandBuffer& currentCB = frameCommandBuffers[recordingBufferIndex];
         currentCB.endRenderPass();
+
+        return *this;
+    }
+
+    RenderPass& RenderPass::endRecording()
+    {
+        vk::CommandBuffer& currentCB = frameCommandBuffers[recordingBufferIndex];
         currentCB.end();
         
         return *this;

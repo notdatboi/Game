@@ -13,9 +13,14 @@ namespace spk
             const std::vector<vk::SubpassDescription>& subpasses,
             const std::vector<vk::SubpassDependency>& dependencies);
         RenderPass& addFramebuffer(const std::vector<vk::ImageView>& attachments, const vk::Extent2D extent);
-        RenderPass& beginRecording(const uint32_t index, const std::vector<vk::ClearValue> clearValues, const vk::Rect2D renderArea, const vk::Fence& waitFence = vk::Fence());
+        RenderPass& beginRecording(const uint32_t index, const vk::Fence& waitFence = vk::Fence());
+        RenderPass& beginPass(const std::vector<vk::ClearValue> clearValues, const vk::Rect2D renderArea);
+        RenderPass& resetQueries(const vk::QueryPool& pool, const uint32_t firstQueryIndex, const uint32_t queryCount);
+        RenderPass& beginQuery(const vk::QueryPool& pool, const uint32_t queryIndex, const vk::QueryControlFlags flags);
+        RenderPass& endQuery(const vk::QueryPool& pool, const uint32_t queryIndex);
         RenderPass& nextSubpass();
         RenderPass& executeCommandBuffer(const vk::CommandBuffer& subpassCommandBuffer);
+        RenderPass& endPass();
         RenderPass& endRecording();
         RenderPass& resetCommandBuffer(const uint32_t index, const bool releaseResources);
 
