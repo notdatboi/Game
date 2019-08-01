@@ -26,6 +26,8 @@ namespace spk
             const vk::PipelineStageFlags dstStageFlags,
             bool oneTimeSubmit);                                          // the buffer data must be tightly packed inside the buffer; offset must be 0
         void updateCPUAccessible(const void* data);
+        void* getCPUAccessibleDataPtr();
+        void unmapCPUAccessibleDataPtr();
         void destroy();
         const vk::Buffer& getBuffer() const;
         ~Buffer();

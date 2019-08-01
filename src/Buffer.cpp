@@ -81,12 +81,26 @@ namespace spk
 
     void Buffer::updateCPUAccessible(const void* data)
     {
+        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        void* mappedMemory = getCPUAccessibleDataPtr();
+        memcpy(mappedMemory, data, size);
+        unmapCPUAccessibleDataPtr();
+    }
+
+    void* Buffer::getCPUAccessibleDataPtr()
+    {
         if(deviceLocal) throw std::runtime_error("Trying to update device local buffer as CPU-accessible.\n");
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const vk::DeviceMemory& memory = system::MemoryManager::getInstance()->getMemory(memoryData.index);
         void* mappedMemory;
         if(logicalDevice.mapMemory(memory, memoryData.offset, size, vk::MemoryMapFlags(), &mappedMemory) != vk::Result::eSuccess) throw std::runtime_error("Failed to map memory!\n");
-        memcpy(mappedMemory, data, size);
+        return mappedMemory;
+    }
+
+    void Buffer::unmapCPUAccessibleDataPtr()
+    {
+        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        const vk::DeviceMemory& memory = system::MemoryManager::getInstance()->getMemory(memoryData.index);
         logicalDevice.unmapMemory(memory);
     }
 
