@@ -1,5 +1,5 @@
 LIBS= -lvulkan -lglfw -lassimp
-CC=g++ -std=c++17
+CC=g++ -std=c++17 -I./include -I./include/Glslang
 BIN=a.out
 SOURCES=$(wildcard src/*.cpp)
 OBJS=$(patsubst src/%.cpp,obj/%.o,$(SOURCES))
@@ -25,7 +25,15 @@ obj/System.o: src/System.cpp \
 	$(CC) -c $< -o $@ -g
 
 obj/ShaderSet.o: src/ShaderSet.cpp \
+	include/Shader.hpp \
 	include/ShaderSet.hpp \
+	include/System.hpp \
+	include/SparkIncludeBase.hpp
+	$(CC) -c $< -o $@ -g
+
+obj/Shader.o: src/Shader.cpp \
+	include/Glslang/DirStackFileIncluder.h \
+	include/Shader.hpp \
 	include/System.hpp \
 	include/SparkIncludeBase.hpp
 	$(CC) -c $< -o $@ -g
