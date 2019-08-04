@@ -197,7 +197,8 @@ namespace spk
             deviceFeatures.setGeometryShader(true)
                 .setTessellationShader(true)
                 .setPipelineStatisticsQuery(true)
-                .setInheritedQueries(true);
+                .setInheritedQueries(true)
+                .setFillModeNonSolid(true);
             // physicalDeviceFeatures
             logicalDeviceCreateInfo.setPEnabledFeatures(&deviceFeatures);
             if(physicalDevice.createDevice(&logicalDeviceCreateInfo, nullptr, &logicalDevice) != vk::Result::eSuccess)
