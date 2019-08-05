@@ -26,16 +26,13 @@ namespace spk
         glslShader.setEnvClient(glslang::EShClientVulkan, vulkanClientVersion);
         glslShader.setEnvTarget(glslang::EshTargetSpv, targetLangVersion);
 
-//        const TBuiltInResource defaultResource{};
-
-
         const EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 
         DirStackFileIncluder includer;
         includer.pushExternalLocalDirectory(getFilePath(filename));
 
         std::string glslPreprocessed;
-        if(!glslShader.preprocess(&DefaultTBuiltInResource/*defaultResource*/, clientInputSematicsVersion, ENoProfile, false, false, messages, &glslPreprocessed, includer))
+        if(!glslShader.preprocess(&DefaultTBuiltInResource, clientInputSematicsVersion, ENoProfile, false, false, messages, &glslPreprocessed, includer))
         {
             std::cout << "GLSL Preprocessing Failed for: " << filename << std::endl;
             std::cout << glslShader.getInfoLog() << std::endl;
