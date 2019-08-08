@@ -20,10 +20,12 @@ namespace spk
         if(loadProperties.load16Bit)
         {
             data = stbi_load_16(filename.c_str(), &tmpW, &tmpH, &tmpC, loadProperties.forceChannelCount == 255 ? 0 : loadProperties.forceChannelCount);
+            properties.bytesPerChannel = 2;
         }
         else
         {
             data = stbi_load(filename.c_str(), &tmpW, &tmpH, &tmpC, loadProperties.forceChannelCount == 255 ? 0 : loadProperties.forceChannelCount);
+            properties.bytesPerChannel = 1;
         }
         properties.width = tmpW;
         properties.height = tmpH;

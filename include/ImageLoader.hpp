@@ -9,6 +9,7 @@ namespace spk
         size_t width;
         size_t height;
         size_t channels;
+        size_t bytesPerChannel;
     };
 
     class ImageLoader
