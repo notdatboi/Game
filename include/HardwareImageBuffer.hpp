@@ -17,10 +17,13 @@ namespace spk
         HardwareImageBuffer& setUsage(const vk::ImageUsageFlags usage);
         HardwareImageBuffer& loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);    // layout must be TransferDst
         HardwareImageBuffer& changeLayout(const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
-        //HardwareImageBuffer& blit();
+        HardwareImageBuffer& blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo);
+        HardwareImageBuffer& waitUntilReady();
         static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
 
         const vk::Image& getVkImage() const;
+        void clearResources();
+        ~HardwareImageBuffer();
     private:
         void load();
 

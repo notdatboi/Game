@@ -44,6 +44,8 @@ namespace spk
         if(logicalDevice.createFence(&fenceInfo, nullptr, &readyFence) != vk::Result::eSuccess) throw std::runtime_error("Failed to create fence!\n");
         vk::SemaphoreCreateInfo semaphoreInfo;
         if(logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &readySemaphore) != vk::Result::eSuccess) throw std::runtime_error("Failed to create semaphore!\n");
+        memoryData.index = ~0;
+        memoryData.offset = ~0;
     }
      
     HardwareImageBuffer& HardwareImageBuffer::setFormat(const vk::Format format)
@@ -196,8 +198,8 @@ namespace spk
             .setImage(image)
             .setSubresourceRange(subresource);
         
-        if(logicalDevice.waitForFences(1, &readyFence, true, ~0U) != vk::Result::eSuccess) throw std::runtime_error("Failed to wait for image to be ready.\n");
-        logicalDevice.resetFences(1, &readyFence);
+        waitUntilReady();
+        commands.reset(vk::CommandBufferResetFlags());
 
         vk::CommandBufferBeginInfo beginInfo;
         commands.begin(&beginInfo);
@@ -224,5 +226,71 @@ namespace spk
     const vk::Image& HardwareImageBuffer::getVkImage() const
     {
         return image;
+    }
+
+    HardwareImageBuffer& HardwareImageBuffer::blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo)
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
+
+        waitUntilReady();
+        commands.reset(vk::CommandBufferResetFlags());
+
+        vk::CommandBufferBeginInfo beginInfo;
+        commands.begin(&beginInfo);
+        commands.blitImage(image, srcLayout, dstImage, dstLayout, 1, &blitInfo, vk::Filter::eLinear);
+        commands.end();
+
+        vk::PipelineStageFlags stageFlags = vk::PipelineStageFlagBits::eTransfer;
+        vk::SubmitInfo submit;
+        submit.setCommandBufferCount(1)
+            .setPCommandBuffers(&commands)
+            .setWaitSemaphoreCount(1)
+            .setPWaitSemaphores(&readySemaphore)
+            .setSignalSemaphoreCount(1)
+            .setPSignalSemaphores(&readySemaphore)
+            .setPWaitDstStageMask(&stageFlags);
+
+        graphicsQueue.submit(1, &submit, readyFence);
+    }
+
+    HardwareImageBuffer& HardwareImageBuffer::waitUntilReady()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        if(logicalDevice.waitForFences(1, &readyFence, true, ~0U) != vk::Result::eSuccess) throw std::runtime_error("Failed to wait for image to be ready.\n");
+        logicalDevice.resetFences(1, &readyFence);
+    }
+
+    void HardwareImageBuffer::clearResources()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        waitUntilReady();
+        if(memoryData.index != (~0) && memoryData.offset != (~0))
+        {
+            system::MemoryManager::getInstance()->freeMemory(memoryData.index);
+            memoryData.index = ~0;
+            memoryData.offset = ~0;
+        }
+        if(image)
+        {
+            logicalDevice.destroyImage(image, nullptr);
+            image = vk::Image();
+        }
+    }
+
+    HardwareImageBuffer::~HardwareImageBuffer()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        clearResources();
+        if(readyFence)
+        {
+            logicalDevice.destroyFence(readyFence, nullptr);
+            readyFence = vk::Fence();
+        }
+        if(readySemaphore)
+        {
+            logicalDevice.destroySemaphore(readySemaphore, nullptr);
+            readySemaphore = vk::Semaphore();
+        }
     }
 }
