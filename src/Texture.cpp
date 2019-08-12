@@ -47,6 +47,7 @@ namespace spk
             .loadFromVkBuffer(src.getData(), vk::ImageAspectFlagBits::eColor);
         
         generateMipmaps();
+        createView();
 
         return *this;
     }
@@ -99,5 +100,48 @@ namespace spk
         }
         subresource.setLevelCount(image.getMipmapLevelCount());
         image.changeLayout(vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, subresource);
+    }
+
+    void Texture::createView()
+    {
+        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+
+        vk::ImageSubresourceRange subresource;
+        subresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1)
+            .setBaseMipLevel(0)
+            .setLevelCount(image.getMipmapLevelCount());
+
+        vk::ComponentMapping components;
+        components.setR(vk::ComponentSwizzle::eR)
+            .setG(vk::ComponentSwizzle::eG)
+            .setB(vk::ComponentSwizzle::eB)
+            .setA(vk::ComponentSwizzle::eA);
+
+        vk::ImageViewCreateInfo viewInfo;
+        viewInfo.setImage(image.getVkImage())
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(image.getFormat())
+            .setComponents(components)
+            .setSubresourceRange(subresource);
+
+        if(logicalDevice.createImageView(&viewInfo, nullptr, &view) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image view!\n");
+    }
+    
+    void Texture::clearResources()
+    {
+        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        if(view)
+        {
+            logicalDevice.destroyImageView(view, nullptr);
+            view = vk::ImageView();
+        }
+        image.clearResources();
+    }
+
+    Texture::~Texture()
+    {
+        clearResources();
     }
 }

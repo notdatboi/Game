@@ -14,9 +14,11 @@ namespace spk
         Texture& setMipmapLevelCount(const uint32_t levelCount);         // must be called before loading, 1 means no mipmaps
         Texture& loadFromImage(const Image& src);
         //Texture& copyToImage(Image& dst) const;
+        void clearResources();
+        ~Texture();
     private:
-
         void generateMipmaps();
+        void createView();
         
         HardwareImageBuffer image;
         vk::ImageView view;
