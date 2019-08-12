@@ -9,6 +9,8 @@ namespace spk
         {
             usage |= vk::ImageUsageFlagBits::eTransferSrc;
         }
+
+        return *this;
     }
 
     Texture::Texture()
@@ -32,6 +34,8 @@ namespace spk
         }
         if(HardwareImageBuffer::getSupportedFormat({format}, vk::ImageTiling::eOptimal, neededFormatFeatures).has_value()) image.setFormat(format);
         else throw std::invalid_argument("Invalid or not supported image format.\n");
+
+        return *this;
     }
 
     Texture& Texture::loadFromImage(const Image& src)
@@ -41,6 +45,10 @@ namespace spk
         image.setExtent(src.getExtent())
             .setUsage(usage)
             .loadFromVkBuffer(src.getData(), vk::ImageAspectFlagBits::eColor);
+        
+        generateMipmaps();
+
+        return *this;
     }
 
     void Texture::generateMipmaps()

@@ -18,7 +18,6 @@ namespace spk
 
         void generateMipmaps();
         
-//        vk::Image texture;
         HardwareImageBuffer image;
         vk::ImageView view;
         vk::Extent3D extent;
