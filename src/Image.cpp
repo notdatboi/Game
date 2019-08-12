@@ -6,7 +6,7 @@ namespace spk
     {
     }
 
-    void Image::load(ImageLoader* loader, const std::string filename)
+    Image& Image::load(ImageLoader* loader, const std::string filename)
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
 
@@ -45,6 +45,8 @@ namespace spk
         logicalDevice.unmapMemory(memory);
 
         loader->unload();
+
+        return *this;
     }
 
     void Image::clearResources()

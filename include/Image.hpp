@@ -15,7 +15,7 @@ namespace spk
     {
     public:
         Image();
-        void load(ImageLoader* loader, const std::string filename);
+        Image& load(ImageLoader* loader, const std::string filename);
         void clearResources();
         ~Image();
     private:
