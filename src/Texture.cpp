@@ -48,6 +48,7 @@ namespace spk
         
         generateMipmaps();
         createView();
+        createSampler();
 
         return *this;
     }
@@ -127,6 +128,45 @@ namespace spk
             .setSubresourceRange(subresource);
 
         if(logicalDevice.createImageView(&viewInfo, nullptr, &view) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image view!\n");
+    }
+
+    void Texture::createSampler()
+    {
+        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+
+        vk::SamplerCreateInfo samplerInfo;
+        samplerInfo.setMagFilter(vk::Filter::eLinear)
+            .setMinFilter(vk::Filter::eLinear)
+            .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+            .setAddressModeU(vk::SamplerAddressMode::eClampToBorder)
+            .setAddressModeV(vk::SamplerAddressMode::eClampToBorder)
+            .setAddressModeW(vk::SamplerAddressMode::eClampToBorder)
+            .setMipLodBias(0)
+            .setAnisotropyEnable(false)
+            .setMaxAnisotropy(0)
+            .setCompareEnable(false)
+            .setCompareOp(vk::CompareOp::eAlways)
+            .setMinLod(0)
+            .setMaxLod(image.getMipmapLevelCount() - 1)
+            .setBorderColor(vk::BorderColor::eFloatOpaqueWhite)
+            .setUnnormalizedCoordinates(false);
+        
+        if(logicalDevice.createSampler(&samplerInfo, nullptr, &sampler) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image sampler!\n");
+    }
+
+    const vk::Image& Texture::getImage() const
+    {
+        return image.getVkImage();
+    }
+
+    const vk::ImageView& Texture::getView() const
+    {
+        return view;
+    }
+
+    const vk::Sampler& Texture::getSampler() const
+    {
+        return sampler;
     }
     
     void Texture::clearResources()
