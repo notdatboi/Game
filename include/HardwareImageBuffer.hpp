@@ -22,6 +22,8 @@ namespace spk
         static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
 
         const vk::Image& getVkImage() const;
+        const uint32_t getMipmapLevelCount() const;
+        const vk::Format getFormat() const;
         void clearResources();
         ~HardwareImageBuffer();
     private:

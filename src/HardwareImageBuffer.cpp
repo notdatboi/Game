@@ -51,21 +51,29 @@ namespace spk
     HardwareImageBuffer& HardwareImageBuffer::setFormat(const vk::Format format)
     {
         this->format = format;
+
+        return *this;
     }
 
     HardwareImageBuffer& HardwareImageBuffer::setMipmapLevelCount(const uint32_t levelCount)
     {
         this->levelCount = levelCount;
+
+        return *this;
     }
 
     HardwareImageBuffer& HardwareImageBuffer::setExtent(const vk::Extent3D extent)
     {
         this->extent = extent;
+
+        return *this;
     }
 
     HardwareImageBuffer& HardwareImageBuffer::setUsage(const vk::ImageUsageFlags usage)
     {
         this->usage = usage;
+
+        return *this;
     }
 
     void HardwareImageBuffer::load()
@@ -107,11 +115,21 @@ namespace spk
         const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
 
         load();
-        vk::ImageSubresourceLayers subresource;
-        subresource.setAspectMask(aspectFlags)
+
+        vk::ImageSubresourceRange subresourceRange;
+        subresourceRange.setAspectMask(aspectFlags)
             .setBaseArrayLayer(0)
             .setLayerCount(1)
-            .setMipLevel(0);
+            .setBaseMipLevel(0)
+            .setLevelCount(1);
+
+        changeLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, subresourceRange);
+
+        vk::ImageSubresourceLayers subresource;
+        subresource.setAspectMask(aspectFlags)
+            .setBaseArrayLayer(subresourceRange.baseArrayLayer)
+            .setLayerCount(subresourceRange.layerCount)
+            .setMipLevel(subresourceRange.baseMipLevel);
         vk::BufferImageCopy copyInfo;
         copyInfo.setBufferOffset(0)
             .setBufferRowLength(0)
@@ -136,6 +154,8 @@ namespace spk
             .setPWaitDstStageMask(&stageFlags);
 
         graphicsQueue.submit(1, &submit, readyFence);
+
+        return *this;
     }
 
     HardwareImageBuffer& HardwareImageBuffer::changeLayout(const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource)
@@ -221,11 +241,23 @@ namespace spk
             .setPWaitDstStageMask(&dstStageFlags);
 
         graphicsQueue.submit(1, &submit, readyFence);
+
+        return *this;
     }
 
     const vk::Image& HardwareImageBuffer::getVkImage() const
     {
         return image;
+    }
+
+    const uint32_t HardwareImageBuffer::getMipmapLevelCount() const
+    {
+        return levelCount;
+    }
+
+    const vk::Format HardwareImageBuffer::getFormat() const
+    {
+        return format;
     }
 
     HardwareImageBuffer& HardwareImageBuffer::blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo)
@@ -252,6 +284,8 @@ namespace spk
             .setPWaitDstStageMask(&stageFlags);
 
         graphicsQueue.submit(1, &submit, readyFence);
+
+        return *this;
     }
 
     HardwareImageBuffer& HardwareImageBuffer::waitUntilReady()
@@ -259,6 +293,8 @@ namespace spk
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         if(logicalDevice.waitForFences(1, &readyFence, true, ~0U) != vk::Result::eSuccess) throw std::runtime_error("Failed to wait for image to be ready.\n");
         logicalDevice.resetFences(1, &readyFence);
+
+        return *this;
     }
 
     void HardwareImageBuffer::clearResources()
