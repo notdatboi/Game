@@ -2,6 +2,7 @@
 #define SPARK_TEXTURE_HPP
 
 #include<Image.hpp>
+#include<HardwareImageBuffer.hpp>
 
 namespace spk
 {
@@ -14,18 +15,14 @@ namespace spk
         Texture& loadFromImage(const Image& src);
         //Texture& copyToImage(Image& dst) const;
     private:
-        static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
 
-        vk::Image texture;
+        void generateMipmaps();
+        
+//        vk::Image texture;
+        HardwareImageBuffer image;
         vk::ImageView view;
-        vk::ImageLayout layout;
-        vk::Format format;
-        system::AllocatedMemoryData memoryData;
-
-        uint32_t mipmapLevelCount;                                       // 
-        vk::CommandBuffer commands;
-        vk::Semaphore textureReadySemaphore;
-        vk::Fence textureReadyFence;
+        vk::Extent3D extent;
+        vk::ImageUsageFlags usage;
     };
 }
 

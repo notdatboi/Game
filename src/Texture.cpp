@@ -2,66 +2,35 @@
 
 namespace spk
 {
-    const std::optional<vk::Format> Texture::getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags)
-    {
-        const vk::PhysicalDevice& physicalDevice = system::System::getInstance()->getPhysicalDevice();
-        std::optional<vk::Format> result;
-        for(const auto fmt : formats)
-        {
-            vk::FormatProperties properties;
-            physicalDevice.getFormatProperties(fmt, &properties);
-            if(tiling == vk::ImageTiling::eLinear)
-            {
-                if(properties.linearTilingFeatures & flags)
-                {
-                    result = fmt;
-                    break;
-                }
-            }
-            else
-            {
-                if(properties.optimalTilingFeatures & flags)
-                {
-                    result = fmt;
-                    break;
-                }
-            }
-        }
-        return result;
-    }
-
     Texture& Texture::setMipmapLevelCount(const uint32_t levelCount)
     {
-        mipmapLevelCount = levelCount;
+        image.setMipmapLevelCount(levelCount);
+        if(levelCount > 1)
+        {
+            usage |= vk::ImageUsageFlagBits::eTransferSrc;
+        }
     }
 
     Texture::Texture()
     {
-        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
-        const auto& commandPool = system::Executives::getInstance()->getPool();
-        if(getSupportedFormat({vk::Format::eR8G8B8A8Unorm}, vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eTransferDst | vk::FormatFeatureFlagBits::eSampledImage).has_value()) format = vk::Format::eR8G8B8A8Unorm;
-        layout = vk::ImageLayout::eUndefined;
-        mipmapLevelCount = 1;
-        vk::CommandBufferAllocateInfo commandBufferInfo;
-        commandBufferInfo.setCommandBufferCount(1)
-            .setCommandPool(commandPool)
-            .setLevel(vk::CommandBufferLevel::ePrimary);
-        if(logicalDevice.allocateCommandBuffers(&commandBufferInfo, &commands) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate command buffer\n");
-        vk::FenceCreateInfo fenceInfo;
-        if(logicalDevice.createFence(&fenceInfo, nullptr, &textureReadyFence) != vk::Result::eSuccess) throw std::runtime_error("Failed to create fence!\n");
-        vk::SemaphoreCreateInfo semaphoreInfo;
-        if(logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &textureReadySemaphore) != vk::Result::eSuccess) throw std::runtime_error("Failed to create semaphore!\n");
+        setMipmapLevelCount(1);
+        try
+        {
+            setFormat(vk::Format::eR8G8B8A8Unorm);
+        }
+        catch(std::runtime_error err){}
+        usage = /*vk::ImageUsageFlagBits::eColorAttachment | */vk::ImageUsageFlagBits::eTransferDst;
     }
 
     Texture& Texture::setFormat(const vk::Format format)
     {
-        vk::FormatFeatureFlags neededFormatFeatures = vk::FormatFeatureFlagBits::eTransferDst | vk::FormatFeatureFlagBits::eSampledImage;
-        if(mipmapLevelCount != 1)
+        vk::FormatFeatureFlags neededFormatFeatures = vk::FormatFeatureFlagBits::eTransferDst /*| vk::FormatFeatureFlagBits::eColorAttachment*/;
+        if(image.getMipmapLevelCount() > 1)
         {
             neededFormatFeatures |= vk::FormatFeatureFlagBits::eBlitSrc;
             neededFormatFeatures |= vk::FormatFeatureFlagBits::eBlitDst;
         }
-        if(getSupportedFormat({format}, vk::ImageTiling::eOptimal, neededFormatFeatures).has_value()) this->format = format;
+        if(HardwareImageBuffer::getSupportedFormat({format}, vk::ImageTiling::eOptimal, neededFormatFeatures).has_value()) image.setFormat(format);
         else throw std::invalid_argument("Invalid or not supported image format.\n");
     }
 
@@ -69,35 +38,58 @@ namespace spk
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const uint32_t queueFamIndices[] = {system::Executives::getInstance()->getGraphicsQueueFamilyIndex()};
-
-        vk::ImageCreateInfo imageInfo;
-        imageInfo.setImageType(vk::ImageType::e2D)
-            .setFormat(format)
-            .setExtent(src.getExtent())
-            .setMipLevels(mipmapLevelCount)
-            .setArrayLayers(1)
-            .setSamples(vk::SampleCountFlagBits::e1)
-            .setTiling(vk::ImageTiling::eOptimal)
-            .setUsage(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
-            .setSharingMode(vk::SharingMode::eExclusive)
-            .setQueueFamilyIndexCount(1)
-            .setPQueueFamilyIndices(queueFamIndices)
-            .setInitialLayout(vk::ImageLayout::eUndefined);
-
-        if(logicalDevice.createImage(&imageInfo, nullptr, &texture) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image!\n");
-
-        vk::MemoryRequirements textureMemoryRequiremets;
-        logicalDevice.getImageMemoryRequirements(texture, &textureMemoryRequiremets);
-        system::MemoryAllocationInfo allocationInfo;
-        allocationInfo.alignment = textureMemoryRequiremets.alignment;
-        allocationInfo.flags = vk::MemoryPropertyFlagBits::eDeviceLocal;
-        allocationInfo.memoryTypeBits = textureMemoryRequiremets.memoryTypeBits;
-        allocationInfo.size = textureMemoryRequiremets.size;
-
-        memoryData = system::MemoryManager::getInstance()->allocateMemory(allocationInfo);
-        const auto& memory = system::MemoryManager::getInstance()->getMemory(memoryData.index);
-        if(logicalDevice.bindImageMemory(texture, memory, memoryData.offset) != vk::Result::eSuccess) throw std::runtime_error("Failed to bind image memory!\n");
-
+        image.setExtent(src.getExtent())
+            .setUsage(usage)
+            .loadFromVkBuffer(src.getData(), vk::ImageAspectFlagBits::eColor);
     }
 
+    void Texture::generateMipmaps()
+    {
+        if(image.getMipmapLevelCount() <= 1) return;
+        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        vk::ImageSubresourceRange subresource;
+        subresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1)
+            .setBaseMipLevel(0)
+            .setLevelCount(1);
+        image.changeLayout(vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, subresource);
+
+        for(auto i = 1; i < image.getMipmapLevelCount(); ++i)
+        {
+            vk::ImageSubresourceLayers srcSubresource, dstSubresource;
+
+            srcSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
+                .setBaseArrayLayer(0)
+                .setLayerCount(1)
+                .setMipLevel(i - 1);
+            dstSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
+                .setBaseArrayLayer(0)
+                .setLayerCount(1)
+                .setMipLevel(i);
+
+            std::array<vk::Offset3D, 2> srcOffsets, dstOffsets;
+            srcOffsets[1] = {extent.width >> (i - 1), extent.height >> (i - 1), extent.depth};
+            dstOffsets[1] = {extent.width >> i, extent.height >> i, extent.depth};
+
+            vk::ImageBlit imageBlit;
+            imageBlit.setSrcSubresource(srcSubresource)
+                .setDstSubresource(dstSubresource)
+                .setSrcOffsets(srcOffsets)
+                .setDstOffsets(dstOffsets);
+            
+            vk::ImageSubresourceRange currentMipSubresource;
+            currentMipSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
+                .setBaseArrayLayer(0)
+                .setLayerCount(1)
+                .setBaseMipLevel(i)
+                .setLevelCount(1);
+            
+            image.changeLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, currentMipSubresource)
+                .blit(image.getVkImage(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eTransferDstOptimal, imageBlit)
+                .changeLayout(vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, currentMipSubresource);
+        }
+        subresource.setLevelCount(image.getMipmapLevelCount());
+        image.changeLayout(vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, subresource);
+    }
 }
