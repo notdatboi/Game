@@ -15,7 +15,8 @@ namespace spk
         HardwareImageBuffer& setMipmapLevelCount(const uint32_t levelCount);         // must be called before loading, 1 means no mipmaps
         HardwareImageBuffer& setExtent(const vk::Extent3D extent);
         HardwareImageBuffer& setUsage(const vk::ImageUsageFlags usage);
-        HardwareImageBuffer& loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);    // layout must be TransferDst
+        HardwareImageBuffer& loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);    // layout must be Undefined
+        HardwareImageBuffer& update(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);                                                      // layout must be TransferDst
         HardwareImageBuffer& changeLayout(const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
         HardwareImageBuffer& blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo);
         HardwareImageBuffer& waitUntilReady();

@@ -111,9 +111,6 @@ namespace spk
 
     HardwareImageBuffer& HardwareImageBuffer::loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags)
     {
-        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
-        const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
-
         load();
 
         vk::ImageSubresourceRange subresourceRange;
@@ -124,6 +121,22 @@ namespace spk
             .setLevelCount(1);
 
         changeLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, subresourceRange);
+        update(buffer, aspectFlags);
+
+        return *this;
+    }
+
+    HardwareImageBuffer& HardwareImageBuffer::update(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags)
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
+
+        vk::ImageSubresourceRange subresourceRange;
+        subresourceRange.setAspectMask(aspectFlags)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1)
+            .setBaseMipLevel(0)
+            .setLevelCount(1);
 
         vk::ImageSubresourceLayers subresource;
         subresource.setAspectMask(aspectFlags)
