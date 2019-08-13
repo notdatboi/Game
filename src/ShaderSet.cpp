@@ -45,21 +45,29 @@ namespace spk
     ShaderSet& ShaderSet::addUniform(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn)
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eUniformBuffer);
+
+        return *this;
     }
 
     ShaderSet& ShaderSet::addTexture(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn)
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eCombinedImageSampler);
+
+        return *this;
     }
 
     ShaderSet& ShaderSet::addUniformArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count)
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eUniformBuffer, count);
+
+        return *this;
     }
 
     ShaderSet& ShaderSet::addTextureArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count)
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eCombinedImageSampler, count);
+
+        return *this;
     }
     
     ShaderSet& ShaderSet::saveConfiguration()
@@ -102,6 +110,44 @@ namespace spk
             .setDescriptorSetCount(descriptorSetLayouts.size())
             .setPSetLayouts(descriptorSetLayouts.data());
         if(logicalDevice.allocateDescriptorSets(&setAllocateInfo, descriptorSets.data()) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate descriptor sets!\n");
+
+        return *this;
+    }
+
+    void ShaderSet::writeTextureDescriptor(const Texture& texture, const uint32_t set, const uint32_t binding, const uint32_t first = 0, const uint32_t count = 1)
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+
+        vk::DescriptorImageInfo info;
+        info.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+            .setImageView(texture.getView())
+            .setSampler(texture.getSampler());
+
+        vk::WriteDescriptorSet write;
+        write.setDstSet(descriptorSets[set])
+            .setDstBinding(binding)
+            .setDstArrayElement(first)
+            .setDescriptorCount(count)
+            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+            .setPImageInfo(&info)
+            .setPBufferInfo(nullptr)
+            .setPTexelBufferView(nullptr);
+
+        logicalDevice.updateDescriptorSets(1, &write, 0, nullptr);
+    }
+
+    ShaderSet& ShaderSet::bindTexture(const uint32_t set, const uint32_t binding, const Texture& texture)
+    {
+        writeTextureDescriptor(texture, set, binding);
+
+        return *this;
+    }
+
+    ShaderSet& ShaderSet::bindTextureArray(const uint32_t set, const uint32_t binding, const uint32_t firstElement, const uint32_t elementCount, const Texture& texture)
+    {
+        writeTextureDescriptor(texture, set, binding, firstElement, elementCount);
+
+        return *this;
     }
 
     const std::vector<vk::PipelineShaderStageCreateInfo>& ShaderSet::getShaderStages() const
