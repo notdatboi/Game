@@ -177,6 +177,11 @@ namespace spk
             logicalDevice.destroyImageView(view, nullptr);
             view = vk::ImageView();
         }
+        if(sampler)
+        {
+            logicalDevice.destroySampler(sampler, nullptr);
+            sampler = vk::Sampler();
+        }
         image.clearResources();
     }
 
