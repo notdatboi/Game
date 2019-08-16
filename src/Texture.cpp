@@ -13,7 +13,7 @@ namespace spk
         return *this;
     }
 
-    Texture::Texture()
+    Texture::Texture() 
     {
         setMipmapLevelCount(1);
         try
@@ -38,17 +38,49 @@ namespace spk
         return *this;
     }
 
+    Texture& Texture::setExtent(const vk::Extent3D extent)
+    {
+        image.setExtent(extent);
+
+        return *this;
+    }
+
+    Texture& Texture::load()
+    {
+        image.setUsage(usage)
+            .load();
+
+        if(!view) createView();
+        if(!sampler) createSampler();
+
+        generateMipmaps();
+
+        return *this;
+    }
+
     Texture& Texture::loadFromImage(const Image& src)
     {
-        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
-        const uint32_t queueFamIndices[] = {system::Executives::getInstance()->getGraphicsQueueFamilyIndex()};
-        image.setExtent(src.getExtent())
-            .setUsage(usage)
-            .loadFromVkBuffer(src.getData(), vk::ImageAspectFlagBits::eColor);
+        if(image.isLoaded())
+        {
+            vk::ImageSubresourceRange subresource;
+            subresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
+                .setBaseArrayLayer(0)
+                .setLayerCount(1)
+                .setBaseMipLevel(0)
+                .setLevelCount(1);
+            image.changeLayout(vk::ImageLayout::eTransferDstOptimal, subresource);
+        }
+        else
+        {
+            image.setUsage(usage);
+        }
         
+        image.loadFromVkBuffer(src.getData(), vk::ImageAspectFlagBits::eColor);        
+        
+        if(!view) createView();
+        if(!sampler) createSampler();
+
         generateMipmaps();
-        createView();
-        createSampler();
 
         return *this;
     }
@@ -63,7 +95,7 @@ namespace spk
             .setLayerCount(1)
             .setBaseMipLevel(0)
             .setLevelCount(1);
-        image.changeLayout(vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, subresource);
+        image.changeLayout(vk::ImageLayout::eTransferSrcOptimal, subresource);
 
         for(auto i = 1; i < image.getMipmapLevelCount(); ++i)
         {
@@ -95,12 +127,12 @@ namespace spk
                 .setBaseMipLevel(i)
                 .setLevelCount(1);
             
-            image.changeLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, currentMipSubresource)
+            image.changeLayout(vk::ImageLayout::eTransferDstOptimal, currentMipSubresource)
                 .blit(image.getVkImage(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eTransferDstOptimal, imageBlit)
-                .changeLayout(vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eTransferSrcOptimal, currentMipSubresource);
+                .changeLayout(vk::ImageLayout::eTransferSrcOptimal, currentMipSubresource);
         }
         subresource.setLevelCount(image.getMipmapLevelCount());
-        image.changeLayout(vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, subresource);
+        image.changeLayout(vk::ImageLayout::eShaderReadOnlyOptimal, subresource);
     }
 
     void Texture::createView()

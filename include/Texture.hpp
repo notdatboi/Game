@@ -12,6 +12,8 @@ namespace spk
         Texture();
         Texture& setFormat(const vk::Format format);                //
         Texture& setMipmapLevelCount(const uint32_t levelCount);         // must be called before loading, 1 means no mipmaps
+        Texture& setExtent(const vk::Extent3D extent);
+        Texture& load();
         Texture& loadFromImage(const Image& src);
         //Texture& copyToImage(Image& dst) const;
 
