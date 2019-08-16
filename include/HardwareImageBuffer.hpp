@@ -15,9 +15,10 @@ namespace spk
         HardwareImageBuffer& setMipmapLevelCount(const uint32_t levelCount);         // must be called before loading, 1 means no mipmaps
         HardwareImageBuffer& setExtent(const vk::Extent3D extent);
         HardwareImageBuffer& setUsage(const vk::ImageUsageFlags usage);
-        HardwareImageBuffer& loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);    // layout must be Undefined
-        HardwareImageBuffer& update(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);                                                      // layout must be TransferDst
-        HardwareImageBuffer& changeLayout(const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
+        HardwareImageBuffer& load();
+        HardwareImageBuffer& loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);
+        //HardwareImageBuffer& update(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);                                                      // layout must be TransferDst
+        HardwareImageBuffer& changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
         HardwareImageBuffer& blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo);
         HardwareImageBuffer& waitUntilReady();
         static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
@@ -28,7 +29,6 @@ namespace spk
         void clearResources();
         ~HardwareImageBuffer();
     private:
-        void load();
 
         vk::CommandBuffer commands;
         vk::Image image;
@@ -36,10 +36,13 @@ namespace spk
         vk::Semaphore readySemaphore;
 
         system::AllocatedMemoryData memoryData;
+        std::vector<vk::ImageLayout> subresourceLayouts;
         vk::Format format;
         uint32_t levelCount;
         vk::Extent3D extent;
         vk::ImageUsageFlags usage;
+
+        bool loaded;
     };
 }
 #endif

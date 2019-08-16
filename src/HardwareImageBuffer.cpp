@@ -58,6 +58,7 @@ namespace spk
     HardwareImageBuffer& HardwareImageBuffer::setMipmapLevelCount(const uint32_t levelCount)
     {
         this->levelCount = levelCount;
+        subresourceLayouts = std::vector<vk::ImageLayout>(levelCount, vk::ImageLayout::eUndefined);
 
         return *this;
     }
@@ -76,7 +77,7 @@ namespace spk
         return *this;
     }
 
-    void HardwareImageBuffer::load()
+    HardwareImageBuffer& HardwareImageBuffer::load()
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const uint32_t queueFamIndices[] = {system::Executives::getInstance()->getGraphicsQueueFamilyIndex()};
@@ -107,28 +108,14 @@ namespace spk
         memoryData = system::MemoryManager::getInstance()->allocateMemory(allocationInfo);
         const auto& memory = system::MemoryManager::getInstance()->getMemory(memoryData.index);
         if(logicalDevice.bindImageMemory(image, memory, memoryData.offset) != vk::Result::eSuccess) throw std::runtime_error("Failed to bind image memory!\n");
-    }
 
-    HardwareImageBuffer& HardwareImageBuffer::loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags)
-    {
-        load();
-
-        vk::ImageSubresourceRange subresourceRange;
-        subresourceRange.setAspectMask(aspectFlags)
-            .setBaseArrayLayer(0)
-            .setLayerCount(1)
-            .setBaseMipLevel(0)
-            .setLevelCount(1);
-
-        changeLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, subresourceRange);
-        update(buffer, aspectFlags);
+        loaded = true;
 
         return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::update(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags)
+    HardwareImageBuffer& HardwareImageBuffer::loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags)
     {
-        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
 
         vk::ImageSubresourceRange subresourceRange;
@@ -138,6 +125,13 @@ namespace spk
             .setBaseMipLevel(0)
             .setLevelCount(1);
 
+        if(!loaded)
+        {
+            load();
+            changeLayout(vk::ImageLayout::eTransferDstOptimal, subresourceRange);
+        }
+
+        //changeLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, subresourceRange);
         vk::ImageSubresourceLayers subresource;
         subresource.setAspectMask(aspectFlags)
             .setBaseArrayLayer(subresourceRange.baseArrayLayer)
@@ -171,10 +165,18 @@ namespace spk
         return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::changeLayout(const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource)
+    HardwareImageBuffer& HardwareImageBuffer::changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource)
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
+
+        vk::ImageLayout oldLayout = subresourceLayouts[subresource.baseMipLevel];
+        for(auto index = subresource.baseMipLevel; index < subresource.baseMipLevel + subresource.levelCount; ++index)
+        {
+            if(subresourceLayouts[index] != oldLayout) throw std::runtime_error("These subresources have different layouts.\n");
+            subresourceLayouts[index] = newLayout;
+        }
+
         vk::AccessFlags srcAccessFlags, dstAccessFlags;
         vk::PipelineStageFlags srcStageFlags, dstStageFlags;
         if(oldLayout == vk::ImageLayout::eUndefined)
@@ -325,6 +327,7 @@ namespace spk
             logicalDevice.destroyImage(image, nullptr);
             image = vk::Image();
         }
+        loaded = false;
     }
 
     HardwareImageBuffer::~HardwareImageBuffer()
