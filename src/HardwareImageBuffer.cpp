@@ -41,6 +41,7 @@ namespace spk
             .setLevel(vk::CommandBufferLevel::ePrimary);
         if(logicalDevice.allocateCommandBuffers(&commandBufferInfo, &commands) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate command buffer\n");
         vk::FenceCreateInfo fenceInfo;
+        fenceInfo.setFlags(vk::FenceCreateFlagBits::eSignaled);
         if(logicalDevice.createFence(&fenceInfo, nullptr, &readyFence) != vk::Result::eSuccess) throw std::runtime_error("Failed to create fence!\n");
         vk::SemaphoreCreateInfo semaphoreInfo;
         if(logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &readySemaphore) != vk::Result::eSuccess) throw std::runtime_error("Failed to create semaphore!\n");
@@ -144,6 +145,9 @@ namespace spk
             .setImageExtent(extent)
             .setImageOffset({0, 0, 0})
             .setImageSubresource(subresource);
+        
+        waitUntilReady();
+        commands.reset(vk::CommandBufferResetFlags());
 
         vk::CommandBufferBeginInfo beginInfo;
         commands.begin(&beginInfo);
@@ -273,6 +277,11 @@ namespace spk
     const vk::Format HardwareImageBuffer::getFormat() const
     {
         return format;
+    }
+
+    const bool HardwareImageBuffer::isLoaded() const
+    {
+        return loaded;
     }
 
     HardwareImageBuffer& HardwareImageBuffer::blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo)

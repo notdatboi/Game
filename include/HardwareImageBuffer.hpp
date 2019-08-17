@@ -26,6 +26,7 @@ namespace spk
         const vk::Image& getVkImage() const;
         const uint32_t getMipmapLevelCount() const;
         const vk::Format getFormat() const;
+        const bool isLoaded() const;
         void clearResources();
         ~HardwareImageBuffer();
     private:
