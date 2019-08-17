@@ -17,12 +17,12 @@ namespace spk
         Image();
         Image& load(ImageLoader* loader, const std::string filename);
         void clearResources();
+        const vk::Extent3D getExtent() const;
         ~Image();
     private:
         friend class Texture;
         const vk::Buffer& getData() const;
         vk::Buffer& getData();
-        const vk::Extent3D getExtent() const;
 
         vk::Buffer imageData;
         vk::Extent3D extent;
