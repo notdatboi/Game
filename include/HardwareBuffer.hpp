@@ -4,40 +4,44 @@
 #include<System.hpp>
 #include<MemoryManager.hpp>
 #include<Executives.hpp>
+#include<HardwareResource.hpp>
 
 namespace spk
 {
-    //enum class HardwareBufferAccessibility
-    //{
-    //    Static,                             // Recommended. Assumption that the buffer is changed rarely, changing takes more time, but reading from it is greatly more optimal. Created with 'shadow buffer' to easily retrieve data
-    //    Dynamic                             // Assumption that the buffer is changed frequently, changing takes almost no time, but usage takes more time
-    //};
-
-    class HardwareBuffer
+    class HardwareBuffer : public HardwareResource
     {
     public:
         HardwareBuffer();
-        //HardwareBuffer& setAccessibility(const HardwareBufferAccessibility accessibility);
-        HardwareBuffer& setUsage(const vk::BufferUsageFlags usage);
-        HardwareBuffer& setSize(const uint32_t size);
-        HardwareBuffer& load();
-        //HardwareBuffer& loadFromBuffer(const HardwareBuffer& buffer);
-        HardwareBuffer& loadFromMemory(const void* data);
+        virtual void setShadowBufferPolicy(bool use = false);
+        virtual void setAccessibility(const HardwareResourceAccessibility accessibility);
+        void setUsage(const vk::BufferUsageFlags usage);
+        void setSize(const uint32_t size);
+        virtual void load();
+        void loadFromBuffer(const HardwareBuffer& buffer);
+        void loadFromMemory(const void* data);
+        virtual void waitUntilReady();
+        virtual void resetWaiter();
         const vk::Buffer& getVkBuffer() const;
         vk::Buffer& getVkBuffer();
-        void clearResources();
-        ~HardwareBuffer();
+        virtual void clearResources();
+        virtual ~HardwareBuffer();
     private:
-        //HardwareBufferAccessibility accessibility;
+        bool useShadowBuffer = false;
+        system::AllocatedMemoryData shadowMemoryData;
+        vk::Buffer shadow;
+
+        HardwareResourceAccessibility accessibility;
         vk::BufferUsageFlags usage;
         uint32_t size;
         bool loaded;
 
-        system::AllocatedMemoryData memoryData;
+        system::AllocatedMemoryData bufferMemoryData;
         vk::Buffer buffer;
-        //vk::Buffer shadow;
 
-        //vk::CommandBuffer commands;
+        vk::CommandBuffer commands;
+        vk::Fence readyFence;
+        vk::Semaphore readySemaphore;
+        bool waitForSemaphore = false;
     };
 }
 
