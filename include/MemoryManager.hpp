@@ -19,6 +19,13 @@ namespace spk
             vk::MemoryPropertyFlags flags;
             uint32_t memoryTypeBits;
             vk::DeviceSize alignment;
+            MemoryAllocationInfo() = default;
+            MemoryAllocationInfo(const vk::MemoryRequirements requirements)
+            {
+                size = requirements.size;
+                memoryTypeBits = requirements.memoryTypeBits;
+                alignment = requirements.alignment;
+            }
         };
 
         struct AllocatedMemoryData
