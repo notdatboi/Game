@@ -28,11 +28,7 @@ namespace spk
 
     void Image::clearResources()
     {
-        if(memoryData.index != (~0) && memoryData.offset != (~0))
-        {
-            system::MemoryManager::getInstance()->freeMemory(memoryData.index);
-            memoryData = {~0, ~0};
-        }
+        data.clearResources();       
     }
 
     const vk::Buffer& Image::getData() const

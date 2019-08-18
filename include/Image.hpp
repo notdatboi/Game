@@ -24,7 +24,6 @@ namespace spk
 
         HardwareBuffer data;
         vk::Extent3D extent;
-        system::AllocatedMemoryData memoryData;
     };
 }
 
