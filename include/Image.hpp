@@ -1,13 +1,11 @@
 #ifndef SPARK_IMAGE_HPP
 #define SPARK_IMAGE_HPP
 #include<SparkIncludeBase.hpp>
-#include<System.hpp>
 #include<optional>
 #include<string>
 #include<vector>
-#include<MemoryManager.hpp>
 #include<ImageLoader.hpp>
-#include<Executives.hpp>
+#include<HardwareBuffer.hpp>
 
 namespace spk
 {
@@ -24,7 +22,7 @@ namespace spk
         const vk::Buffer& getData() const;
         vk::Buffer& getData();
 
-        vk::Buffer imageData;
+        HardwareBuffer data;
         vk::Extent3D extent;
         system::AllocatedMemoryData memoryData;
     };
