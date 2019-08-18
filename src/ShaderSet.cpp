@@ -114,7 +114,7 @@ namespace spk
         return *this;
     }
 
-    void ShaderSet::writeTextureDescriptor(const Texture& texture, const uint32_t set, const uint32_t binding, const uint32_t first = 0, const uint32_t count = 1)
+    void ShaderSet::writeTextureDescriptor(const Texture& texture, const uint32_t set, const uint32_t binding, const uint32_t index = 0)
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
 
@@ -126,8 +126,8 @@ namespace spk
         vk::WriteDescriptorSet write;
         write.setDstSet(descriptorSets[set])
             .setDstBinding(binding)
-            .setDstArrayElement(first)
-            .setDescriptorCount(count)
+            .setDstArrayElement(index)
+            .setDescriptorCount(1)
             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
             .setPImageInfo(&info)
             .setPBufferInfo(nullptr)
@@ -143,9 +143,9 @@ namespace spk
         return *this;
     }
 
-    ShaderSet& ShaderSet::bindTextureArray(const uint32_t set, const uint32_t binding, const uint32_t firstElement, const uint32_t elementCount, const Texture& texture)
+    ShaderSet& ShaderSet::bindTextureArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Texture& texture)
     {
-        writeTextureDescriptor(texture, set, binding, firstElement, elementCount);
+        writeTextureDescriptor(texture, set, binding, elementIndex);
 
         return *this;
     }
