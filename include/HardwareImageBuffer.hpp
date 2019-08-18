@@ -11,11 +11,11 @@ namespace spk
     {
     public:
         HardwareImageBuffer();
-        HardwareImageBuffer& setFormat(const vk::Format format);
-        HardwareImageBuffer& setMipmapLevelCount(const uint32_t levelCount);         // must be called before loading, 1 means no mipmaps
-        HardwareImageBuffer& setExtent(const vk::Extent3D extent);
-        HardwareImageBuffer& setUsage(const vk::ImageUsageFlags usage);
-        HardwareImageBuffer& load();
+        HardwareImageBuffer& setFormat(const vk::Format format);                    // sets format, must be called before loading, does not check format availability
+        HardwareImageBuffer& setMipmapLevelCount(const uint32_t levelCount);        // must be called before loading, 1 means no mipmaps
+        HardwareImageBuffer& setExtent(const vk::Extent3D extent);                  // sets extent, must be called before loading
+        HardwareImageBuffer& setUsage(const vk::ImageUsageFlags usage);             // sets usage, must be called before loading
+        HardwareImageBuffer& load();                                                
         HardwareImageBuffer& loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);
         //HardwareImageBuffer& update(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);                                                      // layout must be TransferDst
         HardwareImageBuffer& changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
