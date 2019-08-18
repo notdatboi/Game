@@ -161,6 +161,7 @@ namespace spk
             if(logicalDevice.mapMemory(memory, bufferMemoryData.offset, size, vk::MemoryMapFlags(), &mapped) != vk::Result::eSuccess) throw std::runtime_error("Failed to map memory!\n");
             memcpy(mapped, data, size);
             logicalDevice.unmapMemory(memory);
+            // Let's just completely ignore the shadow buffer until I find out, why would we need it for CPU-accessible buffer
         }
         else
         {
@@ -268,6 +269,7 @@ namespace spk
                 shadow = vk::Buffer();
             }
         }
+        loaded = false;
     }
 
     HardwareBuffer::~HardwareBuffer()
