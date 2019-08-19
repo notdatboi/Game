@@ -17,9 +17,11 @@ namespace spk
         extent.height = imageProperties.height;
         extent.depth = 1;
         
-        data.setSize(extent.width * extent.height * extent.depth)
-            .setUsage(vk::BufferUsageFlagBits::eTransferSrc)
-            .loadFromMemory(rawImageData);
+        data.setShadowBufferPolicy(false);
+        data.setAccessibility(HardwareResourceAccessibility::Dynamic);
+        data.setSize(extent.width * extent.height * extent.depth);
+        data.setUsage(vk::BufferUsageFlagBits::eTransferSrc);
+        data.loadFromMemory(rawImageData);
 
         loader->unload();
 

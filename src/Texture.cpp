@@ -5,6 +5,8 @@ namespace spk
     Texture& Texture::setMipmapLevelCount(const uint32_t levelCount)
     {
         image.setMipmapLevelCount(levelCount);
+        image.setAccessibility(HardwareResourceAccessibility::Static);
+        image.setShadowBufferPolicy(false);
         if(levelCount > 1)
         {
             usage |= vk::ImageUsageFlagBits::eTransferSrc;
@@ -47,8 +49,8 @@ namespace spk
 
     Texture& Texture::load()
     {
-        image.setUsage(usage)
-            .load();
+        image.setUsage(usage);
+        image.load();
 
         if(!view) createView();
         if(!sampler) createSampler();
@@ -127,9 +129,9 @@ namespace spk
                 .setBaseMipLevel(i)
                 .setLevelCount(1);
             
-            image.changeLayout(vk::ImageLayout::eTransferDstOptimal, currentMipSubresource)
-                .blit(image.getVkImage(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eTransferDstOptimal, imageBlit)
-                .changeLayout(vk::ImageLayout::eTransferSrcOptimal, currentMipSubresource);
+            image.changeLayout(vk::ImageLayout::eTransferDstOptimal, currentMipSubresource);
+            image.blit(image.getVkImage(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eTransferDstOptimal, imageBlit);
+            image.changeLayout(vk::ImageLayout::eTransferSrcOptimal, currentMipSubresource);
         }
         subresource.setLevelCount(image.getMipmapLevelCount());
         image.changeLayout(vk::ImageLayout::eShaderReadOnlyOptimal, subresource);
