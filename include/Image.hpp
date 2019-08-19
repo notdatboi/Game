@@ -13,7 +13,7 @@ namespace spk
     {
     public:
         Image();
-        Image& load(ImageLoader* loader, const std::string filename);
+        void load(ImageLoader* loader, const std::string filename);
         void waitUntilReady() const;
         void clearResources();
         const vk::Extent3D getExtent() const;

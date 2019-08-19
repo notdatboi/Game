@@ -2,7 +2,7 @@
 
 namespace spk
 {
-    Texture& Texture::setMipmapLevelCount(const uint32_t levelCount)
+    void Texture::setMipmapLevelCount(const uint32_t levelCount)
     {
         image.setMipmapLevelCount(levelCount);
         image.setAccessibility(HardwareResourceAccessibility::Static);
@@ -11,8 +11,6 @@ namespace spk
         {
             usage |= vk::ImageUsageFlagBits::eTransferSrc;
         }
-
-        return *this;
     }
 
     Texture::Texture() 
@@ -26,7 +24,7 @@ namespace spk
         usage = /*vk::ImageUsageFlagBits::eColorAttachment | */vk::ImageUsageFlagBits::eTransferDst;
     }
 
-    Texture& Texture::setFormat(const vk::Format format)
+    void Texture::setFormat(const vk::Format format)
     {
         vk::FormatFeatureFlags neededFormatFeatures = vk::FormatFeatureFlagBits::eTransferDst /*| vk::FormatFeatureFlagBits::eColorAttachment*/;
         if(image.getMipmapLevelCount() > 1)
@@ -36,18 +34,14 @@ namespace spk
         }
         if(HardwareImageBuffer::getSupportedFormat({format}, vk::ImageTiling::eOptimal, neededFormatFeatures).has_value()) image.setFormat(format);
         else throw std::invalid_argument("Invalid or not supported image format.\n");
-
-        return *this;
     }
 
-    Texture& Texture::setExtent(const vk::Extent3D extent)
+    void Texture::setExtent(const vk::Extent3D extent)
     {
         image.setExtent(extent);
-
-        return *this;
     }
 
-    Texture& Texture::load()
+    void Texture::load()
     {
         image.setUsage(usage);
         image.load();
@@ -56,11 +50,9 @@ namespace spk
         if(!sampler) createSampler();
 
         generateMipmaps();
-
-        return *this;
     }
 
-    Texture& Texture::loadFromImage(const Image& src)
+    void Texture::loadFromImage(const Image& src)
     {
         if(image.isLoaded())
         {
@@ -83,8 +75,6 @@ namespace spk
         if(!sampler) createSampler();
 
         generateMipmaps();
-
-        return *this;
     }
 
     void Texture::generateMipmaps()

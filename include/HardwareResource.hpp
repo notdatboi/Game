@@ -19,6 +19,7 @@ namespace spk
         virtual void waitUntilReady() const = 0;
         virtual void resetWaiter() = 0;
         virtual void clearResources() = 0;
+        virtual const bool isLoaded() const = 0;
         virtual ~HardwareResource();
     protected:
     };

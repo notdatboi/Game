@@ -10,21 +10,22 @@ namespace spk
     {
     public:
         Texture();
-        Texture& setFormat(const vk::Format format);                //
-        Texture& setMipmapLevelCount(const uint32_t levelCount);         // must be called before loading, 1 means no mipmaps
-        Texture& setExtent(const vk::Extent3D extent);
-        Texture& load();
-        Texture& loadFromImage(const Image& src);
+        void setFormat(const vk::Format format);                //
+        void setMipmapLevelCount(const uint32_t levelCount);         // must be called before loading, 1 means no mipmaps
+        void setExtent(const vk::Extent3D extent);
+        void load();
+        void loadFromImage(const Image& src);
         void waitUntilReady() const;
         //Texture& copyToImage(Image& dst) const;
-
-        const vk::Image& getImage() const;
-        const vk::ImageView& getView() const;
-        const vk::Sampler& getSampler() const;
 
         void clearResources();
         ~Texture();
     private:
+        friend class ShaderSet;
+        const vk::Image& getImage() const;
+        const vk::ImageView& getView() const;
+        const vk::Sampler& getSampler() const;
+
         void generateMipmaps();
         void createView();
         void createSampler();

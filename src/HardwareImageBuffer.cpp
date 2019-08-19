@@ -54,6 +54,7 @@ namespace spk
     void HardwareImageBuffer::setShadowBufferPolicy(bool use)
     {
         useShadowBuffer = use;
+        if(use) usage |= vk::ImageUsageFlagBits::eTransferDst;
     }
 
     void HardwareImageBuffer::setAccessibility(const HardwareResourceAccessibility accessibility)
@@ -80,6 +81,7 @@ namespace spk
     void HardwareImageBuffer::setUsage(const vk::ImageUsageFlags usage)
     {
         this->usage = usage;
+        if(useShadowBuffer) this->usage |= vk::ImageUsageFlagBits::eTransferDst;
     }
 
     void HardwareImageBuffer::load()

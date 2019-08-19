@@ -6,7 +6,7 @@ namespace spk
     {
     }
 
-    Image& Image::load(ImageLoader* loader, const std::string filename)
+    void Image::load(ImageLoader* loader, const std::string filename)
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
 
@@ -24,8 +24,6 @@ namespace spk
         data.loadFromMemory(rawImageData);
 
         loader->unload();
-
-        return *this;
     }
 
     void Image::waitUntilReady() const
