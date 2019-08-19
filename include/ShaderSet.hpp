@@ -8,6 +8,7 @@
 #include<System.hpp>
 #include<Shader.hpp>
 #include<Texture.hpp>
+#include<Uniform.hpp>
 #include<map>
 
 namespace spk
@@ -25,12 +26,15 @@ namespace spk
         ShaderSet& saveConfiguration();             // set gaps are always removed
         ShaderSet& bindTexture(const uint32_t set, const uint32_t binding, const Texture& texture);
         ShaderSet& bindTextureArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Texture& texture);
+        ShaderSet& bindUniform(const uint32_t set, const uint32_t binding, const Uniform& uniform);
+        ShaderSet& bindUniformArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Uniform& uniform);
 
         const std::vector<vk::PipelineShaderStageCreateInfo>& getShaderStages() const;
         ~ShaderSet();
     private:
         void setDescriptorInfo(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const vk::DescriptorType type, const uint32_t count = 1);
         void writeTextureDescriptor(const Texture& texture, const uint32_t set, const uint32_t binding, const uint32_t index = 0);
+        void writeUniformDescriptor(const Uniform& uniform, const uint32_t set, const uint32_t binding, const uint32_t index = 0);
 
         std::map<vk::DescriptorType, uint32_t> poolSizes;
         std::map<uint32_t, std::map<uint32_t, vk::DescriptorSetLayoutBinding> > setLayoutInfos;

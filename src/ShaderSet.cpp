@@ -119,6 +119,7 @@ namespace spk
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
 
         texture.waitUntilReady();
+
         vk::DescriptorImageInfo info;
         info.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setImageView(texture.getView())
@@ -150,6 +151,34 @@ namespace spk
 
         return *this;
     }
+
+    void ShaderSet::writeUniformDescriptor(const Uniform& uniform, const uint32_t set, const uint32_t binding, const uint32_t index)
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+
+        uniform.waitUntilReady();
+
+        vk::DescriptorBufferInfo info;
+        info.setBuffer(uniform.getVkBuffer())
+            .setOffset(0)
+            .setRange(uniform.getSize());
+
+        vk::WriteDescriptorSet write;
+        write.setDstSet(descriptorSets[set])
+            .setDstBinding(binding)
+            .setDstArrayElement(index)
+            .setDescriptorCount(1)
+            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+            .setPImageInfo(nullptr)
+            .setPBufferInfo(&info)
+            .setPTexelBufferView(nullptr);
+
+        logicalDevice.updateDescriptorSets(1, &write, 0, nullptr);
+    }
+
+    ShaderSet& ShaderSet::bindUniform(const uint32_t set, const uint32_t binding, const Uniform& uniform){}
+
+    ShaderSet& ShaderSet::bindUniformArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Uniform& uniform){}
 
     const std::vector<vk::PipelineShaderStageCreateInfo>& ShaderSet::getShaderStages() const
     {
