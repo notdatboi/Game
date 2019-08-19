@@ -15,6 +15,7 @@ namespace spk
         Texture& setExtent(const vk::Extent3D extent);
         Texture& load();
         Texture& loadFromImage(const Image& src);
+        void waitUntilReady() const;
         //Texture& copyToImage(Image& dst) const;
 
         const vk::Image& getImage() const;

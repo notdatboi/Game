@@ -16,7 +16,7 @@ namespace spk
         virtual void setShadowBufferPolicy(bool use = false) = 0;
         virtual void setAccessibility(const HardwareResourceAccessibility accessibility) = 0;
         virtual void load() = 0;
-        virtual void waitUntilReady() = 0;
+        virtual void waitUntilReady() const = 0;
         virtual void resetWaiter() = 0;
         virtual void clearResources() = 0;
         virtual ~HardwareResource();

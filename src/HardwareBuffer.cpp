@@ -218,7 +218,7 @@ namespace spk
         }
     }
 
-    void HardwareBuffer::waitUntilReady()
+    void HardwareBuffer::waitUntilReady() const
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         if(logicalDevice.waitForFences(1, &readyFence, true, ~0U) != vk::Result::eSuccess) throw std::runtime_error("Failed to wait for image to be ready.\n");

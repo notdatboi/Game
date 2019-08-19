@@ -19,7 +19,7 @@ namespace spk
         virtual void load();
         void loadFromBuffer(const HardwareBuffer& buffer);
         void loadFromMemory(const void* data);
-        virtual void waitUntilReady();
+        virtual void waitUntilReady() const;
         virtual void resetWaiter();
         const vk::Buffer& getVkBuffer() const;
         vk::Buffer& getVkBuffer();

@@ -202,6 +202,11 @@ namespace spk
     {
         return sampler;
     }
+
+    void Texture::waitUntilReady() const
+    {
+        image.waitUntilReady();
+    }
     
     void Texture::clearResources()
     {

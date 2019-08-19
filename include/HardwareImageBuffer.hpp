@@ -22,7 +22,7 @@ namespace spk
         void loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);
         void changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
         void blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo);
-        virtual void waitUntilReady();
+        virtual void waitUntilReady() const;
         virtual void resetWaiter();
         static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
 

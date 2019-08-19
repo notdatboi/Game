@@ -118,6 +118,7 @@ namespace spk
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
 
+        texture.waitUntilReady();
         vk::DescriptorImageInfo info;
         info.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
             .setImageView(texture.getView())

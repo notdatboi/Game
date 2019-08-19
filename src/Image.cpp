@@ -28,6 +28,11 @@ namespace spk
         return *this;
     }
 
+    void Image::waitUntilReady() const
+    {
+        data.waitUntilReady();
+    }
+
     void Image::clearResources()
     {
         data.clearResources();       
