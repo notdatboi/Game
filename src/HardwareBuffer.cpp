@@ -57,6 +57,7 @@ namespace spk
         if(logicalDevice.createBuffer(&bufferInfo, nullptr, &buffer) != vk::Result::eSuccess) throw std::runtime_error("Failed to create buffer!\n");
         if(useShadowBuffer)
         {
+            bufferInfo.setUsage(vk::BufferUsageFlagBits::eTransferSrc);
             if(logicalDevice.createBuffer(&bufferInfo, nullptr, &shadow) != vk::Result::eSuccess) throw std::runtime_error("Failed to create buffer!\n");
         }
 
