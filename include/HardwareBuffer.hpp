@@ -24,6 +24,8 @@ namespace spk
         const vk::Buffer& getVkBuffer() const;
         vk::Buffer& getVkBuffer();
         virtual void clearResources();
+        virtual const bool isLoaded() const;
+        const uint32_t getSize() const;
         virtual ~HardwareBuffer();
     private:
         bool useShadowBuffer = false;

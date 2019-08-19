@@ -26,6 +26,7 @@ namespace spk
     void HardwareBuffer::setShadowBufferPolicy(bool use = false)
     {
         useShadowBuffer = use;
+        if(use) usage |= vk::BufferUsageFlagBits::eTransferDst;
     }
 
     void HardwareBuffer::setAccessibility(const HardwareResourceAccessibility accessibility)
@@ -36,6 +37,7 @@ namespace spk
     void HardwareBuffer::setUsage(const vk::BufferUsageFlags usage)
     {
         this->usage = usage;
+        if(useShadowBuffer) this->usage |= vk::BufferUsageFlagBits::eTransferDst;
     }
 
     void HardwareBuffer::setSize(const uint32_t size)
@@ -271,6 +273,16 @@ namespace spk
             }
         }
         loaded = false;
+    }
+
+    const bool HardwareBuffer::isLoaded() const
+    {
+        return loaded;
+    }
+
+    const uint32_t HardwareBuffer::getSize() const
+    {
+        return size;
     }
 
     HardwareBuffer::~HardwareBuffer()
