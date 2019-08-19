@@ -4,39 +4,48 @@
 #include<System.hpp>
 #include<Executives.hpp>
 #include<MemoryManager.hpp>
+#include<HardwareResource.hpp>
 
 namespace spk
 {
-    class HardwareImageBuffer
+    class HardwareImageBuffer : public HardwareResource
     {
     public:
         HardwareImageBuffer();
-        HardwareImageBuffer& setFormat(const vk::Format format);                    // sets format, must be called before loading, does not check format availability
-        HardwareImageBuffer& setMipmapLevelCount(const uint32_t levelCount);        // must be called before loading, 1 means no mipmaps
-        HardwareImageBuffer& setExtent(const vk::Extent3D extent);                  // sets extent, must be called before loading
-        HardwareImageBuffer& setUsage(const vk::ImageUsageFlags usage);             // sets usage, must be called before loading
-        HardwareImageBuffer& load();                                                
-        HardwareImageBuffer& loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);
-        //HardwareImageBuffer& update(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);                                                      // layout must be TransferDst
-        HardwareImageBuffer& changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
-        HardwareImageBuffer& blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo);
-        HardwareImageBuffer& waitUntilReady();
+        virtual void setShadowBufferPolicy(bool use = false);
+        virtual void setAccessibility(const HardwareResourceAccessibility accessibility);
+        void setFormat(const vk::Format format);                    // sets format, must be called before loading, does not check format availability
+        void setMipmapLevelCount(const uint32_t levelCount);        // must be called before loading, 1 means no mipmaps
+        void setExtent(const vk::Extent3D extent);                  // sets extent, must be called before loading
+        void setUsage(const vk::ImageUsageFlags usage);             // sets usage, must be called before loading
+        virtual void load();                                                
+        void loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);
+        void changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
+        void blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo);
+        virtual void waitUntilReady();
+        virtual void resetWaiter();
         static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
 
         const vk::Image& getVkImage() const;
         const uint32_t getMipmapLevelCount() const;
         const vk::Format getFormat() const;
         const bool isLoaded() const;
-        void clearResources();
-        ~HardwareImageBuffer();
+        virtual void clearResources();
+        virtual ~HardwareImageBuffer();
     private:
+        bool useShadowBuffer = false;
+        system::AllocatedMemoryData shadowMemoryData;
+        vk::Buffer shadow;
+
+        HardwareResourceAccessibility accessibility;
 
         vk::CommandBuffer commands;
         vk::Image image;
         vk::Fence readyFence;
+        bool waitForSemaphore = false;
         vk::Semaphore readySemaphore;
 
-        system::AllocatedMemoryData memoryData;
+        system::AllocatedMemoryData imageMemoryData;
         std::vector<vk::ImageLayout> subresourceLayouts;
         vk::Format format;
         uint32_t levelCount;

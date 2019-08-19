@@ -45,40 +45,44 @@ namespace spk
         if(logicalDevice.createFence(&fenceInfo, nullptr, &readyFence) != vk::Result::eSuccess) throw std::runtime_error("Failed to create fence!\n");
         vk::SemaphoreCreateInfo semaphoreInfo;
         if(logicalDevice.createSemaphore(&semaphoreInfo, nullptr, &readySemaphore) != vk::Result::eSuccess) throw std::runtime_error("Failed to create semaphore!\n");
-        memoryData.index = ~0;
-        memoryData.offset = ~0;
+        imageMemoryData.index = ~0;
+        imageMemoryData.offset = ~0;
+        shadowMemoryData.index = ~0;
+        shadowMemoryData.offset = ~0;
     }
-     
-    HardwareImageBuffer& HardwareImageBuffer::setFormat(const vk::Format format)
+
+    void HardwareImageBuffer::setShadowBufferPolicy(bool use)
+    {
+        useShadowBuffer = use;
+    }
+
+    void HardwareImageBuffer::setAccessibility(const HardwareResourceAccessibility accessibility)
+    {
+        this->accessibility = accessibility;
+    }
+
+    void HardwareImageBuffer::setFormat(const vk::Format format)
     {
         this->format = format;
-
-        return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::setMipmapLevelCount(const uint32_t levelCount)
+    void HardwareImageBuffer::setMipmapLevelCount(const uint32_t levelCount)
     {
         this->levelCount = levelCount;
         subresourceLayouts = std::vector<vk::ImageLayout>(levelCount, vk::ImageLayout::eUndefined);
-
-        return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::setExtent(const vk::Extent3D extent)
+    void HardwareImageBuffer::setExtent(const vk::Extent3D extent)
     {
         this->extent = extent;
-
-        return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::setUsage(const vk::ImageUsageFlags usage)
+    void HardwareImageBuffer::setUsage(const vk::ImageUsageFlags usage)
     {
         this->usage = usage;
-
-        return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::load()
+    void HardwareImageBuffer::load()
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const uint32_t queueFamIndices[] = {system::Executives::getInstance()->getGraphicsQueueFamilyIndex()};
@@ -102,20 +106,45 @@ namespace spk
         logicalDevice.getImageMemoryRequirements(image, &imageMemoryRequiremets);
         system::MemoryAllocationInfo allocationInfo;
         allocationInfo.alignment = imageMemoryRequiremets.alignment;
-        allocationInfo.flags = vk::MemoryPropertyFlagBits::eDeviceLocal;
+        if(accessibility == HardwareResourceAccessibility::Static)
+        {
+            allocationInfo.flags = vk::MemoryPropertyFlagBits::eDeviceLocal;
+        }
+        else
+        {
+            allocationInfo.flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+        }
         allocationInfo.memoryTypeBits = imageMemoryRequiremets.memoryTypeBits;
         allocationInfo.size = imageMemoryRequiremets.size;
 
-        memoryData = system::MemoryManager::getInstance()->allocateMemory(allocationInfo);
-        const auto& memory = system::MemoryManager::getInstance()->getMemory(memoryData.index);
-        if(logicalDevice.bindImageMemory(image, memory, memoryData.offset) != vk::Result::eSuccess) throw std::runtime_error("Failed to bind image memory!\n");
+        imageMemoryData = system::MemoryManager::getInstance()->allocateMemory(allocationInfo);
+        const auto& memory = system::MemoryManager::getInstance()->getMemory(imageMemoryData.index);
+        if(logicalDevice.bindImageMemory(image, memory, imageMemoryData.offset) != vk::Result::eSuccess) throw std::runtime_error("Failed to bind image memory!\n");
+
+        if(useShadowBuffer)
+        {
+            vk::BufferCreateInfo shadowInfo;
+            shadowInfo.setQueueFamilyIndexCount(1)
+                .setPQueueFamilyIndices(queueFamIndices)
+                .setSharingMode(vk::SharingMode::eExclusive)
+                .setSize(extent.width * extent.height * extent.depth)
+                .setUsage(vk::BufferUsageFlagBits::eTransferSrc);
+            
+            if(logicalDevice.createBuffer(&shadowInfo, nullptr, &shadow) != vk::Result::eSuccess) throw std::runtime_error("Failed to create buffer!\n");
+
+            vk::MemoryRequirements shadowMemRequirements;
+            logicalDevice.getBufferMemoryRequirements(shadow, &shadowMemRequirements);
+            system::MemoryAllocationInfo shadowMemInfo(shadowMemRequirements);
+            shadowMemInfo.flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+            shadowMemoryData = system::MemoryManager::getInstance()->allocateMemory(shadowMemInfo);
+            const vk::DeviceMemory& shadowMem = system::MemoryManager::getInstance()->getMemory(shadowMemoryData.index);
+            if(logicalDevice.bindBufferMemory(shadow, shadowMem, shadowMemoryData.offset) != vk::Result::eSuccess) throw std::runtime_error("Failed to bind memory!\n");
+        }
 
         loaded = true;
-
-        return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags)
+    void HardwareImageBuffer::loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags)
     {
         const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
 
@@ -147,29 +176,48 @@ namespace spk
             .setImageSubresource(subresource);
         
         waitUntilReady();
+        resetWaiter();
         commands.reset(vk::CommandBufferResetFlags());
 
         vk::CommandBufferBeginInfo beginInfo;
+        beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
         commands.begin(&beginInfo);
         commands.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, 1, &copyInfo);
+        vk::BufferCopy shadowCopyInfo;
+        if(useShadowBuffer)
+        {
+            shadowCopyInfo.setSrcOffset(0)
+                .setDstOffset(0)
+                .setSize(extent.width * extent.height * extent.depth);
+            commands.copyBuffer(buffer, shadow, 1, &shadowCopyInfo);
+        }
         commands.end();
 
         vk::PipelineStageFlags stageFlags = vk::PipelineStageFlagBits::eTransfer;
         vk::SubmitInfo submit;
+
+        if(waitForSemaphore)
+        {
+            submit.setWaitSemaphoreCount(1)
+                .setPWaitSemaphores(&readySemaphore);
+        }
+        else
+        {
+            submit.setWaitSemaphoreCount(0)
+                .setPWaitSemaphores(nullptr);
+            waitForSemaphore = true;
+        }
+
         submit.setCommandBufferCount(1)
             .setPCommandBuffers(&commands)
-            .setWaitSemaphoreCount(0)
-            .setPWaitSemaphores(nullptr)
             .setSignalSemaphoreCount(1)
             .setPSignalSemaphores(&readySemaphore)
             .setPWaitDstStageMask(&stageFlags);
 
         graphicsQueue.submit(1, &submit, readyFence);
-
-        return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource)
+    void HardwareImageBuffer::changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource)
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
@@ -238,9 +286,11 @@ namespace spk
             .setSubresourceRange(subresource);
         
         waitUntilReady();
+        resetWaiter();
         commands.reset(vk::CommandBufferResetFlags());
 
         vk::CommandBufferBeginInfo beginInfo;
+        beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
         commands.begin(&beginInfo);
         commands.pipelineBarrier(srcStageFlags,
             dstStageFlags,
@@ -251,17 +301,26 @@ namespace spk
         commands.end();
 
         vk::SubmitInfo submit;
+
+        if(waitForSemaphore)
+        {
+            submit.setWaitSemaphoreCount(1)
+                .setPWaitSemaphores(&readySemaphore);
+        }
+        else
+        {
+            submit.setWaitSemaphoreCount(0)
+                .setPWaitSemaphores(nullptr);
+            waitForSemaphore = true;
+        }
+
         submit.setCommandBufferCount(1)
             .setPCommandBuffers(&commands)
-            .setWaitSemaphoreCount(1)
-            .setPWaitSemaphores(&readySemaphore)
             .setSignalSemaphoreCount(1)
             .setPSignalSemaphores(&readySemaphore)
             .setPWaitDstStageMask(&dstStageFlags);
 
         graphicsQueue.submit(1, &submit, readyFence);
-
-        return *this;
     }
 
     const vk::Image& HardwareImageBuffer::getVkImage() const
@@ -284,57 +343,88 @@ namespace spk
         return loaded;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo)
+    void HardwareImageBuffer::blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo)
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
 
         waitUntilReady();
+        resetWaiter();
         commands.reset(vk::CommandBufferResetFlags());
 
         vk::CommandBufferBeginInfo beginInfo;
+        beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
         commands.begin(&beginInfo);
         commands.blitImage(image, srcLayout, dstImage, dstLayout, 1, &blitInfo, vk::Filter::eLinear);
         commands.end();
 
         vk::PipelineStageFlags stageFlags = vk::PipelineStageFlagBits::eTransfer;
+
         vk::SubmitInfo submit;
+
+        if(waitForSemaphore)
+        {
+            submit.setWaitSemaphoreCount(1)
+                .setPWaitSemaphores(&readySemaphore);
+        }
+        else
+        {
+            submit.setWaitSemaphoreCount(0)
+                .setPWaitSemaphores(nullptr);
+            waitForSemaphore = true;
+        }
+
         submit.setCommandBufferCount(1)
             .setPCommandBuffers(&commands)
-            .setWaitSemaphoreCount(1)
-            .setPWaitSemaphores(&readySemaphore)
             .setSignalSemaphoreCount(1)
             .setPSignalSemaphores(&readySemaphore)
             .setPWaitDstStageMask(&stageFlags);
 
         graphicsQueue.submit(1, &submit, readyFence);
-
-        return *this;
     }
 
-    HardwareImageBuffer& HardwareImageBuffer::waitUntilReady()
+    void HardwareImageBuffer::waitUntilReady()
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         if(logicalDevice.waitForFences(1, &readyFence, true, ~0U) != vk::Result::eSuccess) throw std::runtime_error("Failed to wait for image to be ready.\n");
-        logicalDevice.resetFences(1, &readyFence);
+    }
 
-        return *this;
+    void HardwareImageBuffer::resetWaiter()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        logicalDevice.resetFences(1, &readyFence);
     }
 
     void HardwareImageBuffer::clearResources()
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         waitUntilReady();
-        if(memoryData.index != (~0) && memoryData.offset != (~0))
+        //resetWaiter();
+        commands.reset(vk::CommandBufferResetFlagBits::eReleaseResources);
+        if(imageMemoryData.index != (~0) && imageMemoryData.offset != (~0))
         {
-            system::MemoryManager::getInstance()->freeMemory(memoryData.index);
-            memoryData.index = ~0;
-            memoryData.offset = ~0;
+            system::MemoryManager::getInstance()->freeMemory(imageMemoryData.index);
+            imageMemoryData.index = ~0;
+            imageMemoryData.offset = ~0;
         }
         if(image)
         {
             logicalDevice.destroyImage(image, nullptr);
             image = vk::Image();
+        }
+        if(useShadowBuffer)
+        {
+            if(shadowMemoryData.index != (~0) && shadowMemoryData.offset != (~0))
+            {
+                system::MemoryManager::getInstance()->freeMemory(shadowMemoryData.index);
+                shadowMemoryData.index = ~0;
+                shadowMemoryData.offset = ~0;
+            }
+            if(shadow)
+            {
+                logicalDevice.destroyBuffer(shadow, nullptr);
+                shadow = vk::Buffer();
+            }
         }
         loaded = false;
     }
