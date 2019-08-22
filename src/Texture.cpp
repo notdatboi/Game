@@ -5,8 +5,6 @@ namespace spk
     void Texture::setMipmapLevelCount(const uint32_t levelCount)
     {
         image.setMipmapLevelCount(levelCount);
-        image.setAccessibility(HardwareResourceAccessibility::Static);
-        image.setShadowBufferPolicy(false);
         if(levelCount > 1)
         {
             usage |= vk::ImageUsageFlagBits::eTransferSrc;
@@ -21,7 +19,9 @@ namespace spk
             setFormat(vk::Format::eR8G8B8A8Unorm);
         }
         catch(std::runtime_error err){}
-        usage = /*vk::ImageUsageFlagBits::eColorAttachment | */vk::ImageUsageFlagBits::eTransferDst;
+        image.setAccessibility(HardwareResourceAccessibility::Static);
+        image.setShadowBufferPolicy(false);
+        usage = /*vk::ImageUsageFlagBits::eColorAttachment | */vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
     }
 
     void Texture::setFormat(const vk::Format format)
