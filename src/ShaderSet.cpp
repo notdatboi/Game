@@ -11,16 +11,11 @@ namespace spk
         create(shaderFilenames);
     }
 
-    ShaderSet::ShaderSet(const std::shared_ptr<std::vector<Shader>> shaders)
-    {
-        create(shaders);
-    }
-
     void ShaderSet::create(const std::vector<std::string>& shaderFilenames)
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
         shaders.get()->resize(shaderFilenames.size());
-        shaderStages.resize(shaderFilenames.size());
+        shaderStages.get()->resize(shaderFilenames.size());
 
         for(int i = 0; i < shaderFilenames.size(); ++i)
         {
@@ -28,36 +23,23 @@ namespace spk
         }
         for(int i = 0; i < shaderFilenames.size(); ++i)
         {
-            shaderStages[i].setModule((*shaders.get())[i].getShader());
-            shaderStages[i].setStage((*shaders.get())[i].getType());
-            shaderStages[i].setPName("main");
-            shaderStages[i].setPSpecializationInfo(nullptr);
-        }
-    }
-
-    void ShaderSet::create(const std::shared_ptr<std::vector<Shader>> shaders)
-    {
-        this->shaders = shaders;
-
-        for(int i = 0; i < this->shaders.get()->size(); ++i)
-        {
-            shaderStages[i].setModule((*this->shaders.get())[i].getShader());
-            shaderStages[i].setStage((*this->shaders.get())[i].getType());
-            shaderStages[i].setPName("main");
-            shaderStages[i].setPSpecializationInfo(nullptr);
+            (*shaderStages.get())[i].setModule((*shaders.get())[i].getShader());
+            (*shaderStages.get())[i].setStage((*shaders.get())[i].getType());
+            (*shaderStages.get())[i].setPName("main");
+            (*shaderStages.get())[i].setPSpecializationInfo(nullptr);
         }
     }
 
     void ShaderSet::setDescriptorInfo(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const vk::DescriptorType type, const uint32_t count = 1)
     {
-        poolSizes[type]++;
+        (*poolSizes.get())[type]++;
         vk::DescriptorSetLayoutBinding setLayoutBinding;
         setLayoutBinding.setBinding(binding)
             .setDescriptorType(type)
             .setDescriptorCount(count)
             .setStageFlags(usedIn)
             .setPImmutableSamplers(nullptr);
-        setLayoutInfos[set][binding] = setLayoutBinding;
+        (*setLayoutInfos.get())[set][binding] = setLayoutBinding;
     }
 
     void ShaderSet::addUniform(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn)
@@ -79,13 +61,13 @@ namespace spk
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eCombinedImageSampler, count);
     }
-    
-    void ShaderSet::saveConfiguration()
+
+    void ShaderSet::createPool()
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         uint32_t maxSets = 0;
         std::vector<vk::DescriptorPoolSize> assembledPoolSizes;
-        for(auto poolSize : poolSizes)
+        for(auto poolSize : (*poolSizes.get()))
         {
             assembledPoolSizes.push_back(vk::DescriptorPoolSize(poolSize.first, poolSize.second));
             maxSets += poolSize.second;
@@ -96,12 +78,19 @@ namespace spk
             .setPoolSizeCount(assembledPoolSizes.size())
             .setPPoolSizes(assembledPoolSizes.data());
         if(logicalDevice.createDescriptorPool(&descriptorPoolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) throw std::runtime_error("Failed to create descriptor pool!\n");
+    }
 
-        descriptorSetLayouts.resize(setLayoutInfos.size());
-        descriptorSets.resize(descriptorSetLayouts.size());
+    void ShaderSet::saveConfiguration()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+
+        createPool();
+
+        descriptorSetLayouts.get()->resize(setLayoutInfos.get()->size());
+        descriptorSets.resize(descriptorSetLayouts.get()->size());
 
         uint32_t index = 0;
-        for(auto& setLayoutInfo : setLayoutInfos)
+        for(auto& setLayoutInfo : (*setLayoutInfos.get()))
         {
             std::vector<vk::DescriptorSetLayoutBinding> bindings;
             for(auto& bnd : setLayoutInfo.second)
@@ -111,15 +100,36 @@ namespace spk
             vk::DescriptorSetLayoutCreateInfo info;
             info.setBindingCount(bindings.size())
                 .setPBindings(bindings.data());
-            if(logicalDevice.createDescriptorSetLayout(&info, nullptr, &descriptorSetLayouts[index]) != vk::Result::eSuccess) throw std::runtime_error("Failed to create descriptor set layout!\n");
+            if(logicalDevice.createDescriptorSetLayout(&info, nullptr, &(*descriptorSetLayouts.get())[index]) != vk::Result::eSuccess) throw std::runtime_error("Failed to create descriptor set layout!\n");
             ++index;
         }
 
+        createSets();
+    }
+
+    void ShaderSet::createSets()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+
         vk::DescriptorSetAllocateInfo setAllocateInfo;
         setAllocateInfo.setDescriptorPool(descriptorPool)
-            .setDescriptorSetCount(descriptorSetLayouts.size())
-            .setPSetLayouts(descriptorSetLayouts.data());
+            .setDescriptorSetCount(descriptorSetLayouts.get()->size())
+            .setPSetLayouts(descriptorSetLayouts.get()->data());
         if(logicalDevice.allocateDescriptorSets(&setAllocateInfo, descriptorSets.data()) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate descriptor sets!\n");
+    }
+
+    ShaderSet& ShaderSet::operator=(const ShaderSet& other)
+    {
+        poolSizes = other.poolSizes;
+        setLayoutInfos = other.setLayoutInfos;
+        descriptorSetLayouts = other.descriptorSetLayouts;
+        shaderStages = other.shaderStages;
+        shaders = other.shaders;
+
+        createPool();
+        createSets();
+
+        return *this;
     }
 
     void ShaderSet::writeTextureDescriptor(const Texture& texture, const uint32_t set, const uint32_t binding, const uint32_t index = 0)
@@ -195,14 +205,9 @@ namespace spk
         return shaders == other.shaders;
     }
 
-    std::shared_ptr<std::vector<Shader>> ShaderSet::copyShaders() const
-    {
-        return shaders;
-    }
-
     const std::vector<vk::PipelineShaderStageCreateInfo>& ShaderSet::getShaderStages() const
     {
-        return shaderStages;
+        return *shaderStages.get();
     }
 
     void ShaderSet::destroy()
@@ -211,6 +216,17 @@ namespace spk
         if(descriptorPool)
         {
             logicalDevice.destroyDescriptorPool(descriptorPool, nullptr);
+        }
+        if(descriptorSetLayouts.use_count() == 1)
+        {
+            for(auto& layout : (*descriptorSetLayouts.get()))
+            {
+                if(layout)
+                {
+                    logicalDevice.destroyDescriptorSetLayout(layout, nullptr);
+                    layout = vk::DescriptorSetLayout();
+                }
+            }
         }
     }
 
