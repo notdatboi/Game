@@ -10,6 +10,7 @@
 #include<Texture.hpp>
 #include<Uniform.hpp>
 #include<map>
+#include<memory>
 
 namespace spk
 {
@@ -18,16 +19,22 @@ namespace spk
     public:
         ShaderSet();
         ShaderSet(const std::vector<std::string>& shaderFilenames);
+        ShaderSet(const std::shared_ptr<std::vector<Shader>> shaders);
         void create(const std::vector<std::string>& shaderFilenames);
-        ShaderSet& addUniform(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn);
-        ShaderSet& addTexture(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn);
-        ShaderSet& addUniformArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count);
-        ShaderSet& addTextureArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count);
-        ShaderSet& saveConfiguration();             // set gaps are always removed
-        ShaderSet& bindTexture(const uint32_t set, const uint32_t binding, const Texture& texture);
-        ShaderSet& bindTextureArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Texture& texture);
-        ShaderSet& bindUniform(const uint32_t set, const uint32_t binding, const Uniform& uniform);
-        ShaderSet& bindUniformArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Uniform& uniform);
+        void create(const std::shared_ptr<std::vector<Shader>> shaders);
+        void addUniform(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn);
+        void addTexture(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn);
+        void addUniformArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count);
+        void addTextureArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count);
+        void saveConfiguration();             // descriptor set gaps are always removed
+        void bindTexture(const uint32_t set, const uint32_t binding, const Texture& texture);
+        void bindTextureArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Texture& texture);
+        void bindUniform(const uint32_t set, const uint32_t binding, const Uniform& uniform);
+        void bindUniformArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Uniform& uniform);
+
+        const bool areShadersEqual(const ShaderSet& other) const;
+
+        std::shared_ptr<std::vector<Shader>> copyShaders() const;
 
         const std::vector<vk::PipelineShaderStageCreateInfo>& getShaderStages() const;
         ~ShaderSet();
@@ -42,7 +49,7 @@ namespace spk
         std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
         std::vector<vk::DescriptorSet> descriptorSets;
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
-        std::vector<Shader> shaders;
+        std::shared_ptr<std::vector<Shader>> shaders;
         void destroy();
     };
 }

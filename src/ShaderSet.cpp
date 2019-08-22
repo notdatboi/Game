@@ -2,7 +2,7 @@
 
 namespace spk
 {
-    ShaderSet::ShaderSet()
+    ShaderSet::ShaderSet(): shaders()
     {
     }
 
@@ -11,20 +11,38 @@ namespace spk
         create(shaderFilenames);
     }
 
+    ShaderSet::ShaderSet(const std::shared_ptr<std::vector<Shader>> shaders)
+    {
+        create(shaders);
+    }
+
     void ShaderSet::create(const std::vector<std::string>& shaderFilenames)
     {
         const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
-        shaders.resize(shaderFilenames.size());
-        shaderStages.resize(shaders.size());
+        shaders.get()->resize(shaderFilenames.size());
+        shaderStages.resize(shaderFilenames.size());
 
-        for(int i = 0; i < shaders.size(); ++i)
+        for(int i = 0; i < shaderFilenames.size(); ++i)
         {
-            shaders[i].load(shaderFilenames[i]);
+            (*shaders.get())[i].load(shaderFilenames[i]);
         }
-        for(int i = 0; i < shaders.size(); ++i)
+        for(int i = 0; i < shaderFilenames.size(); ++i)
         {
-            shaderStages[i].setModule(shaders[i].getShader());
-            shaderStages[i].setStage(shaders[i].getType());
+            shaderStages[i].setModule((*shaders.get())[i].getShader());
+            shaderStages[i].setStage((*shaders.get())[i].getType());
+            shaderStages[i].setPName("main");
+            shaderStages[i].setPSpecializationInfo(nullptr);
+        }
+    }
+
+    void ShaderSet::create(const std::shared_ptr<std::vector<Shader>> shaders)
+    {
+        this->shaders = shaders;
+
+        for(int i = 0; i < this->shaders.get()->size(); ++i)
+        {
+            shaderStages[i].setModule((*this->shaders.get())[i].getShader());
+            shaderStages[i].setStage((*this->shaders.get())[i].getType());
             shaderStages[i].setPName("main");
             shaderStages[i].setPSpecializationInfo(nullptr);
         }
@@ -42,35 +60,27 @@ namespace spk
         setLayoutInfos[set][binding] = setLayoutBinding;
     }
 
-    ShaderSet& ShaderSet::addUniform(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn)
+    void ShaderSet::addUniform(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn)
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eUniformBuffer);
-
-        return *this;
     }
 
-    ShaderSet& ShaderSet::addTexture(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn)
+    void ShaderSet::addTexture(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn)
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eCombinedImageSampler);
-
-        return *this;
     }
 
-    ShaderSet& ShaderSet::addUniformArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count)
+    void ShaderSet::addUniformArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count)
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eUniformBuffer, count);
-
-        return *this;
     }
 
-    ShaderSet& ShaderSet::addTextureArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count)
+    void ShaderSet::addTextureArray(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const uint32_t count)
     {
         setDescriptorInfo(set, binding, usedIn, vk::DescriptorType::eCombinedImageSampler, count);
-
-        return *this;
     }
     
-    ShaderSet& ShaderSet::saveConfiguration()
+    void ShaderSet::saveConfiguration()
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
         uint32_t maxSets = 0;
@@ -110,8 +120,6 @@ namespace spk
             .setDescriptorSetCount(descriptorSetLayouts.size())
             .setPSetLayouts(descriptorSetLayouts.data());
         if(logicalDevice.allocateDescriptorSets(&setAllocateInfo, descriptorSets.data()) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate descriptor sets!\n");
-
-        return *this;
     }
 
     void ShaderSet::writeTextureDescriptor(const Texture& texture, const uint32_t set, const uint32_t binding, const uint32_t index = 0)
@@ -138,18 +146,14 @@ namespace spk
         logicalDevice.updateDescriptorSets(1, &write, 0, nullptr);
     }
 
-    ShaderSet& ShaderSet::bindTexture(const uint32_t set, const uint32_t binding, const Texture& texture)
+    void ShaderSet::bindTexture(const uint32_t set, const uint32_t binding, const Texture& texture)
     {
         writeTextureDescriptor(texture, set, binding);
-
-        return *this;
     }
 
-    ShaderSet& ShaderSet::bindTextureArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Texture& texture)
+    void ShaderSet::bindTextureArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Texture& texture)
     {
         writeTextureDescriptor(texture, set, binding, elementIndex);
-
-        return *this;
     }
 
     void ShaderSet::writeUniformDescriptor(const Uniform& uniform, const uint32_t set, const uint32_t binding, const uint32_t index)
@@ -176,9 +180,25 @@ namespace spk
         logicalDevice.updateDescriptorSets(1, &write, 0, nullptr);
     }
 
-    ShaderSet& ShaderSet::bindUniform(const uint32_t set, const uint32_t binding, const Uniform& uniform){}
+    void ShaderSet::bindUniform(const uint32_t set, const uint32_t binding, const Uniform& uniform)
+    {
+        writeUniformDescriptor(uniform, set, binding);
+    }
 
-    ShaderSet& ShaderSet::bindUniformArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Uniform& uniform){}
+    void ShaderSet::bindUniformArrayElement(const uint32_t set, const uint32_t binding, const uint32_t elementIndex, const Uniform& uniform)
+    {
+        writeUniformDescriptor(uniform, set, binding, elementIndex);
+    }
+
+    const bool ShaderSet::areShadersEqual(const ShaderSet& other) const
+    {
+        return shaders == other.shaders;
+    }
+
+    std::shared_ptr<std::vector<Shader>> ShaderSet::copyShaders() const
+    {
+        return shaders;
+    }
 
     const std::vector<vk::PipelineShaderStageCreateInfo>& ShaderSet::getShaderStages() const
     {
