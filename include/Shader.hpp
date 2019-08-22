@@ -17,6 +17,8 @@ namespace spk
         void load(const std::string& filename);
         const vk::ShaderModule& getShader() const;
         const vk::ShaderStageFlagBits getType() const;
+        const bool operator==(const Shader& other) const;
+        const bool operator!=(const Shader& other) const;
         ~Shader();
     private:
         const std::string getFilePath(const std::string& filename);

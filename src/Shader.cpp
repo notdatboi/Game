@@ -124,6 +124,15 @@ namespace spk
             throw std::invalid_argument("Invalid shader suffix given.\n");
         }
     }
+    const bool Shader::operator==(const Shader& other) const
+    {
+        return shader == other.shader;
+    }
+
+    const bool Shader::operator!=(const Shader& other) const
+    {
+        return !((*this) == other);
+    }
 
     const vk::ShaderModule& Shader::getShader() const
     {
