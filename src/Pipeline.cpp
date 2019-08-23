@@ -55,46 +55,39 @@ namespace spk
 
         dynamicInfo.setDynamicStateCount(0)
             .setPDynamicStates(nullptr);
-
     }
 
-    Pipeline& Pipeline::addShaderStages(const std::vector<vk::PipelineShaderStageCreateInfo> stages)
+    void Pipeline::setShaders(const ShaderSet& shaders)
     {
-        shaderStageInfos = stages;
-
-        return *this;
+        shaderStageInfos = shaders.getShaderStages();
+        layout = *shaders.getPipelineLayoutPtr().get();
     }
 
-    Pipeline& Pipeline::addVertexInputState(const std::vector<vk::VertexInputBindingDescription> bindingDescriptions, const std::vector<vk::VertexInputAttributeDescription> attributeDescriptions)
+    void Pipeline::setVertexDescription(const VertexDescription& description)
     {
-        auto* bindingPtrs = new vk::VertexInputBindingDescription[bindingDescriptions.size()];
-        auto* attrPtrs = new vk::VertexInputAttributeDescription[attributeDescriptions.size()];
-        memcpy(bindingPtrs, bindingDescriptions.data(), sizeof(vk::VertexInputBindingDescription) * bindingDescriptions.size());
-        memcpy(attrPtrs, attributeDescriptions.data(), sizeof(vk::VertexInputAttributeDescription) * attributeDescriptions.size());
-        vertexInputInfo.setVertexBindingDescriptionCount(bindingDescriptions.size())
+        auto* bindingPtrs = new vk::VertexInputBindingDescription[description.bindingDescriptions.size()];
+        auto* attrPtrs = new vk::VertexInputAttributeDescription[description.attributeDescriptions.size()];
+        memcpy(bindingPtrs, description.bindingDescriptions.data(), sizeof(vk::VertexInputBindingDescription) * description.bindingDescriptions.size());
+        memcpy(attrPtrs, description.attributeDescriptions.data(), sizeof(vk::VertexInputAttributeDescription) * description.attributeDescriptions.size());
+        vertexInputInfo.setVertexBindingDescriptionCount(description.bindingDescriptions.size())
             .setPVertexBindingDescriptions(bindingPtrs)
-            .setVertexAttributeDescriptionCount(attributeDescriptions.size())
+            .setVertexAttributeDescriptionCount(description.attributeDescriptions.size())
             .setPVertexAttributeDescriptions(attrPtrs);
 
-        return *this;
     }
 
-    Pipeline& Pipeline::addInputAssemblyState(const vk::PrimitiveTopology topology, const bool primitiveRestartEnable)
+    void Pipeline::setInputAssemblyState(const vk::PrimitiveTopology topology, const bool primitiveRestartEnable)
     {
         inputAssemblyInfo.setTopology(topology)
             .setPrimitiveRestartEnable(primitiveRestartEnable);
-
-        return *this;
     }
 
-    Pipeline& Pipeline::addTessellationState(const uint32_t patchControlPoints)
+    void Pipeline::setTessellationState(const uint32_t patchControlPoints)
     {
         tessellationInfo.setPatchControlPoints(patchControlPoints);
-
-        return *this;
     }
 
-    Pipeline& Pipeline::addViewportState(const std::vector<vk::Viewport> viewports, const std::vector<vk::Rect2D> scissors)
+    void Pipeline::setViewportState(const std::vector<vk::Viewport> viewports, const std::vector<vk::Rect2D> scissors)
     {
         auto* viewportPtrs = new vk::Viewport[viewports.size()];
         auto* scissorPtrs = new vk::Rect2D[scissors.size()];
@@ -104,11 +97,9 @@ namespace spk
             .setPViewports(viewportPtrs)
             .setScissorCount(scissors.size())
             .setPScissors(scissorPtrs);
-
-        return *this;
     }
 
-    Pipeline& Pipeline::addRasterizationState(const bool depthClampEnable,
+    void Pipeline::setRasterizationState(const bool depthClampEnable,
         const bool rasterizedDiscardEnable,
         const vk::PolygonMode polygonMode,
         const vk::CullModeFlags cullMode,
@@ -129,11 +120,18 @@ namespace spk
             .setDepthBiasClamp(depthBiasClamp)
             .setDepthBiasSlopeFactor(depthBiasSlopeFactor)
             .setLineWidth(lineWidth);
-
-        return *this;
     }
 
-    Pipeline& Pipeline::addMultisampleState(const vk::SampleCountFlagBits rasterizationSamples,
+    void Pipeline::setRasterizationState(const vk::PolygonMode polygonMode,
+        const vk::CullModeFlags cullMode,
+        const vk::FrontFace frontFace)
+    {
+        rasterizationInfo.setPolygonMode(polygonMode)
+            .setCullMode(cullMode)
+            .setFrontFace(frontFace);
+    }
+
+    void Pipeline::setMultisampleState(const vk::SampleCountFlagBits rasterizationSamples,
         const bool sampleShadingEnable,
         const float minSampleShading,
         const vk::SampleMask* sampleMask,
@@ -146,11 +144,9 @@ namespace spk
             .setPSampleMask(sampleMask)
             .setAlphaToCoverageEnable(alphaToCoverageEnable)
             .setAlphaToOneEnable(alphaToOneEnable);
-
-        return *this;
     }
 
-    Pipeline& Pipeline::addDepthStencilState(const bool depthTestEnable,
+    void Pipeline::setDepthStencilState(const bool depthTestEnable,
         const bool depthWriteEnable,
         const vk::CompareOp compareOp,
         const bool depthBoundsTestEnable,
@@ -169,11 +165,15 @@ namespace spk
             .setBack(back)
             .setMinDepthBounds(minDepthBounds)
             .setMaxDepthBounds(maxDepthBounds);
-
-        return *this;
     }
 
-    Pipeline& Pipeline::addColorBlendState(const bool logicOpEnable,
+    void Pipeline::setDepthStencilState(const bool enable, const vk::CompareOp compareOp)
+    {
+        depthStencilInfo.setDepthBoundsTestEnable(enable)
+            .setDepthCompareOp(compareOp);
+    }
+
+    void Pipeline::setColorBlendState(const bool logicOpEnable,
         const vk::LogicOp logicOp,
         const std::vector<vk::PipelineColorBlendAttachmentState> attachments,
         const std::array<float, 4> blendConstants)
@@ -185,47 +185,43 @@ namespace spk
             .setAttachmentCount(attachments.size())
             .setPAttachments(attachmentPtrs)
             .setBlendConstants(blendConstants);
-
-        return *this;
     }
 
-    Pipeline& Pipeline::addDynamicState(const std::vector<vk::DynamicState> dynamicStates)
+    void Pipeline::setColorBlendState(const uint32_t renderTargetCount)
+    {
+        vk::PipelineColorBlendAttachmentState defaultState;
+        defaultState.setBlendEnable(false)
+            .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+        std::vector<vk::PipelineColorBlendAttachmentState> states(renderTargetCount, defaultState);
+        auto* attachmentPtrs = new vk::PipelineColorBlendAttachmentState[renderTargetCount];
+        memcpy(attachmentPtrs, states.data(), sizeof(vk::PipelineColorBlendAttachmentState) * states.size());
+
+        colorBlendInfo.setAttachmentCount(renderTargetCount)
+            .setPAttachments(attachmentPtrs);
+    }
+
+    void Pipeline::setDynamicState(const std::vector<vk::DynamicState> dynamicStates)
     {
         auto* dynamicPtrs = new vk::DynamicState[dynamicStates.size()];
         memcpy(dynamicPtrs, dynamicStates.data(), sizeof(vk::DynamicState) * dynamicStates.size());
         dynamicInfo.setDynamicStateCount(dynamicStates.size())
             .setPDynamicStates(dynamicPtrs);
-
-        return *this;
     }
 
-    Pipeline& Pipeline::setLayout(const vk::PipelineLayout& layout)
-    {
-        this->layout = layout;
-
-        return *this;
-    }
-
-    Pipeline& Pipeline::setRenderPass(const vk::RenderPass& renderPass)
+    void Pipeline::setRenderPass(const vk::RenderPass& renderPass)
     {
         this->renderPass = renderPass;
-
-        return *this;
     }
 
-    Pipeline& Pipeline::setSubpassIndex(const uint32_t subpassIndex)
+    void Pipeline::setSubpassIndex(const uint32_t subpassIndex)
     {
         this->subpass = subpassIndex;
-
-        return *this;
     }
 
-    Pipeline& Pipeline::setBaseHandleAndIndex(const vk::Pipeline& baseHandle, const int32_t baseIndex)
+    void Pipeline::setBaseHandleAndIndex(const vk::Pipeline& baseHandle, const int32_t baseIndex)
     {
         this->baseHandle = baseHandle;
         this->baseIndex = baseIndex;
-
-        return *this;
     }
 
     void Pipeline::create()
@@ -283,89 +279,6 @@ namespace spk
             delete[] dynamicInfo.pDynamicStates;
         }
     }
-
-    /*void Pipeline::create(const ShaderStages& shaderStages, 
-        const VertexInputState& vertexInputState,
-        const InputAssemblyState& inputAssemblyState,
-        const TessellationState& tessellationState,
-        const ViewportState& viewportState,
-        const RasterizationState& rasterizationState,
-        const MultisampleState& multisampleState,
-        const DepthStencilState& depthStencilState,
-        const ColorBlendState& colorBlendState,
-        const DynamicState& dynamicState,
-        const AdditionalInfo& additionalInfo)
-    {
-        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
-
-        layout = additionalInfo.layout;
-
-        vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
-        vertexInputInfo.setVertexBindingDescriptionCount(vertexInputState.bindingDescriptions.size())
-            .setPVertexBindingDescriptions(vertexInputState.bindingDescriptions.data())
-            .setVertexAttributeDescriptionCount(vertexInputState.attributeDescriptions.size())
-            .setPVertexAttributeDescriptions(vertexInputState.attributeDescriptions.data());
-        
-        vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-        inputAssemblyInfo.setTopology(inputAssemblyState.topology)
-            .setPrimitiveRestartEnable(inputAssemblyState.enablePrimitiveRestart);
-
-        vk::PipelineTessellationStateCreateInfo tessellationInfo;
-        tessellationInfo.setPatchControlPoints(tessellationState.patchControlPointCount);
-
-        vk::PipelineViewportStateCreateInfo viewportInfo;
-        viewportInfo.setViewportCount(1)
-            .setPViewports(&viewportState.viewport)
-            .setScissorCount(1)
-            .setPScissors(&viewportState.scissor);
-
-        vk::PipelineRasterizationStateCreateInfo rasterizationInfo;
-        rasterizationInfo.setDepthClampEnable(rasterizationState.enableDepthClamp)
-            .setRasterizerDiscardEnable(false)
-            .setPolygonMode(vk::PolygonMode::eFill)
-            .setCullMode(rasterizationState.cullMode)
-            .setFrontFace(rasterizationState.frontFace)
-            .setDepthBiasEnable(false)
-            .setLineWidth(1.0f);
-
-        vk::PipelineMultisampleStateCreateInfo multisampleInfo;
-        multisampleInfo.setRasterizationSamples(multisampleState.rasterizationSampleCount)
-            .setSampleShadingEnable(false);
-
-        vk::PipelineDepthStencilStateCreateInfo depthStencilInfo;
-        depthStencilInfo.setDepthTestEnable(depthStencilState.enableDepthTest)
-            .setDepthWriteEnable(depthStencilState.writeTestResults)
-            .setDepthCompareOp(depthStencilState.depthCompareOp)
-            .setDepthBoundsTestEnable(false)
-            .setStencilTestEnable(false);
-
-        vk::PipelineColorBlendStateCreateInfo colorBlendInfo;
-        colorBlendInfo.setLogicOpEnable(false)
-            .setAttachmentCount(colorBlendState.attachmentStates.size())
-            .setPAttachments(colorBlendState.attachmentStates.data());
-
-        vk::PipelineDynamicStateCreateInfo dynamicInfo;
-        dynamicInfo.setDynamicStateCount(dynamicState.states.size())
-            .setPDynamicStates(dynamicState.states.data());
-
-        vk::GraphicsPipelineCreateInfo info;
-        info.setStageCount(shaderStages.stages.size())
-            .setPStages(shaderStages.stages.data())
-            .setPVertexInputState(&vertexInputInfo)
-            .setPInputAssemblyState(&inputAssemblyInfo)
-            .setPTessellationState(&tessellationInfo)
-            .setPViewportState(&viewportInfo)
-            .setPRasterizationState(&rasterizationInfo)
-            .setPMultisampleState(&multisampleInfo)
-            .setPDepthStencilState(&depthStencilInfo)
-            .setPColorBlendState(&colorBlendInfo)
-            .setPDynamicState(&dynamicInfo)
-            .setLayout(layout)
-            .setRenderPass(additionalInfo.renderPass)
-            .setSubpass(additionalInfo.subpassIndex);
-        
-        if(logicalDevice.createGraphicsPipelines(vk::PipelineCache(), 1, &info, nullptr, &pipeline) != vk::Result::eSuccess) throw std::runtime_error("Failed to create pipeline!\n");
-    }*/
 
     const vk::Pipeline& Pipeline::getPipeline() const
     {
