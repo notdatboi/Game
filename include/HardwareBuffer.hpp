@@ -19,6 +19,9 @@ namespace spk
         virtual void load();
         void loadFromBuffer(const HardwareBuffer& buffer);
         void loadFromMemory(const void* data);
+        void* map();
+        void unmap();
+
         virtual void waitUntilReady() const;
         virtual void resetWaiter();
         const vk::Buffer& getVkBuffer() const;
@@ -28,6 +31,7 @@ namespace spk
         const uint32_t getSize() const;
         virtual ~HardwareBuffer();
     private:
+        void copyShadowContents();
         bool useShadowBuffer = false;
         system::AllocatedMemoryData shadowMemoryData;
         vk::Buffer shadow;

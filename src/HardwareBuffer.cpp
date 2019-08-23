@@ -176,48 +176,46 @@ namespace spk
                 memcpy(mapped, data, size);
                 logicalDevice.unmapMemory(memory);
 
-                vk::BufferCopy copyInfo;
-                copyInfo.setSrcOffset(0)
-                    .setDstOffset(0)
-                    .setSize(size);
-
-                waitUntilReady();
-                resetWaiter();
-
-                commands.reset(vk::CommandBufferResetFlags());
-                vk::CommandBufferBeginInfo beginInfo;
-                beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-                commands.begin(&beginInfo);
-                commands.copyBuffer(shadow, buffer, 1, &copyInfo);
-                commands.end();
-
-                vk::PipelineStageFlags stageMask = vk::PipelineStageFlagBits::eTransfer;
-
-                vk::SubmitInfo submit;
-
-                if(waitForSemaphore)
-                {
-                    submit.setWaitSemaphoreCount(1)
-                        .setPWaitSemaphores(&readySemaphore);
-                }
-                else
-                {
-                    submit.setWaitSemaphoreCount(0)
-                        .setPWaitSemaphores(nullptr);
-                    waitForSemaphore = true;
-                }
-
-                submit.setPWaitDstStageMask(&stageMask)
-                    .setCommandBufferCount(1)
-                    .setPCommandBuffers(&commands)
-                    .setSignalSemaphoreCount(1)
-                    .setPSignalSemaphores(&readySemaphore);
-
-                const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
-                graphicsQueue.submit(1, &submit, readyFence);
+                copyShadowContents();
             }
             else throw std::runtime_error("Device memory can't be accessed without shadow buffer.\n");
         }
+    }
+
+    void* HardwareBuffer::map()
+    {
+        if(accessibility == HardwareResourceAccessibility::Static && !useShadowBuffer) throw std::runtime_error("Can not map device memory.\n");
+
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        void* mapped;
+
+        waitUntilReady();
+
+        if(useShadowBuffer)
+        {
+            const vk::DeviceMemory& memory = system::MemoryManager::getInstance()->getMemory(shadowMemoryData.index);
+            if(logicalDevice.mapMemory(memory, shadowMemoryData.offset, size, vk::MemoryMapFlags(), &mapped) != vk::Result::eSuccess) throw std::runtime_error("Failed to map memory!\n");
+            return mapped;
+        }
+        const vk::DeviceMemory& memory = system::MemoryManager::getInstance()->getMemory(bufferMemoryData.index);
+        if(logicalDevice.mapMemory(memory, bufferMemoryData.offset, size, vk::MemoryMapFlags(), &mapped) != vk::Result::eSuccess) throw std::runtime_error("Failed to map memory!\n");
+        return mapped;
+    }
+
+    void HardwareBuffer::unmap()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+
+        waitUntilReady();
+
+        if(useShadowBuffer)
+        {
+            const vk::DeviceMemory& memory = system::MemoryManager::getInstance()->getMemory(shadowMemoryData.index);
+            logicalDevice.unmapMemory(memory);
+            copyShadowContents();
+        }
+        const vk::DeviceMemory& memory = system::MemoryManager::getInstance()->getMemory(bufferMemoryData.index);
+        logicalDevice.unmapMemory(memory);
     }
 
     void HardwareBuffer::waitUntilReady() const
@@ -283,6 +281,49 @@ namespace spk
     const uint32_t HardwareBuffer::getSize() const
     {
         return size;
+    }
+
+    void HardwareBuffer::copyShadowContents()
+    {
+        vk::BufferCopy copyInfo;
+        copyInfo.setSrcOffset(0)
+            .setDstOffset(0)
+            .setSize(size);
+
+        waitUntilReady();
+        resetWaiter();
+
+        commands.reset(vk::CommandBufferResetFlags());
+        vk::CommandBufferBeginInfo beginInfo;
+        beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+        commands.begin(&beginInfo);
+        commands.copyBuffer(shadow, buffer, 1, &copyInfo);
+        commands.end();
+
+        vk::PipelineStageFlags stageMask = vk::PipelineStageFlagBits::eTransfer;
+
+        vk::SubmitInfo submit;
+
+        if(waitForSemaphore)
+        {
+            submit.setWaitSemaphoreCount(1)
+                .setPWaitSemaphores(&readySemaphore);
+        }
+        else
+        {
+            submit.setWaitSemaphoreCount(0)
+                .setPWaitSemaphores(nullptr);
+            waitForSemaphore = true;
+        }
+
+        submit.setPWaitDstStageMask(&stageMask)
+            .setCommandBufferCount(1)
+            .setPCommandBuffers(&commands)
+            .setSignalSemaphoreCount(1)
+            .setPSignalSemaphores(&readySemaphore);
+
+        const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
+        graphicsQueue.submit(1, &submit, readyFence);
     }
 
     HardwareBuffer::~HardwareBuffer()
