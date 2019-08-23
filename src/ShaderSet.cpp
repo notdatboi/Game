@@ -225,6 +225,11 @@ namespace spk
         return *shaderStages.get();
     }
 
+    const std::shared_ptr<vk::PipelineLayout> ShaderSet::getPipelineLayoutPtr() const
+    {
+        return pipelineLayout;
+    }
+
     void ShaderSet::destroy()
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();

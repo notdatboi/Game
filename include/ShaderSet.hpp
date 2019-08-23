@@ -33,9 +33,12 @@ namespace spk
 
         const bool areShadersEqual(const ShaderSet& other) const;
 
-        const std::vector<vk::PipelineShaderStageCreateInfo>& getShaderStages() const;
         ~ShaderSet();
     private:
+        friend class Pipeline;
+        const std::shared_ptr<vk::PipelineLayout> getPipelineLayoutPtr() const;
+        const std::vector<vk::PipelineShaderStageCreateInfo>& getShaderStages() const;
+
         void setDescriptorInfo(const uint32_t set, const uint32_t binding, const vk::ShaderStageFlags usedIn, const vk::DescriptorType type, const uint32_t count = 1);
         void writeTextureDescriptor(const Texture& texture, const uint32_t set, const uint32_t binding, const uint32_t index = 0);
         void writeUniformDescriptor(const Uniform& uniform, const uint32_t set, const uint32_t binding, const uint32_t index = 0);
