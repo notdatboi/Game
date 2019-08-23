@@ -105,6 +105,7 @@ namespace spk
         }
 
         createSets();
+        createPipelineLayout();
     }
 
     void ShaderSet::createSets()
@@ -118,6 +119,19 @@ namespace spk
         if(logicalDevice.allocateDescriptorSets(&setAllocateInfo, descriptorSets.data()) != vk::Result::eSuccess) throw std::runtime_error("Failed to allocate descriptor sets!\n");
     }
 
+    void ShaderSet::createPipelineLayout()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+        pipelineLayoutInfo.setSetLayoutCount(descriptorSetLayouts.get()->size())
+            .setPSetLayouts(descriptorSetLayouts.get()->data())
+            .setPushConstantRangeCount(0)
+            .setPPushConstantRanges(nullptr);
+        
+        logicalDevice.createPipelineLayout(&pipelineLayoutInfo, nullptr, pipelineLayout.get());
+    }
+
     ShaderSet& ShaderSet::operator=(const ShaderSet& other)
     {
         poolSizes = other.poolSizes;
@@ -125,6 +139,7 @@ namespace spk
         descriptorSetLayouts = other.descriptorSetLayouts;
         shaderStages = other.shaderStages;
         shaders = other.shaders;
+        pipelineLayout = other.pipelineLayout;
 
         createPool();
         createSets();
@@ -226,6 +241,14 @@ namespace spk
                     logicalDevice.destroyDescriptorSetLayout(layout, nullptr);
                     layout = vk::DescriptorSetLayout();
                 }
+            }
+        }
+        if(pipelineLayout.use_count() == 1)
+        {
+            if(pipelineLayout.get())
+            {
+                logicalDevice.destroyPipelineLayout(*pipelineLayout.get(), nullptr);
+                pipelineLayout = nullptr;
             }
         }
     }

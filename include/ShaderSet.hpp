@@ -41,6 +41,7 @@ namespace spk
         void writeUniformDescriptor(const Uniform& uniform, const uint32_t set, const uint32_t binding, const uint32_t index = 0);
         void createPool();
         void createSets();
+        void createPipelineLayout();
 
         std::shared_ptr<std::map<vk::DescriptorType, uint32_t>> poolSizes;
         std::shared_ptr<std::map<uint32_t, std::map<uint32_t, vk::DescriptorSetLayoutBinding>>> setLayoutInfos;
@@ -49,6 +50,7 @@ namespace spk
         std::vector<vk::DescriptorSet> descriptorSets;
         std::shared_ptr<std::vector<vk::PipelineShaderStageCreateInfo>> shaderStages;
         std::shared_ptr<std::vector<Shader>> shaders;
+        std::shared_ptr<vk::PipelineLayout> pipelineLayout;
         void destroy();
     };
 }
