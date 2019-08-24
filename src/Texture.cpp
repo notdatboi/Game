@@ -26,7 +26,7 @@ namespace spk
 
     void Texture::setFormat(const vk::Format format)
     {
-        vk::FormatFeatureFlags neededFormatFeatures = vk::FormatFeatureFlagBits::eTransferDst /*| vk::FormatFeatureFlagBits::eColorAttachment*/;
+        vk::FormatFeatureFlags neededFormatFeatures = vk::FormatFeatureFlagBits::eTransferDst | vk::FormatFeatureFlagBits::eSampledImage /*| vk::FormatFeatureFlagBits::eColorAttachment*/;
         if(image.getMipmapLevelCount() > 1)
         {
             neededFormatFeatures |= vk::FormatFeatureFlagBits::eBlitSrc;
