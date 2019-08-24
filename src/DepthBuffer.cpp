@@ -58,6 +58,19 @@ namespace spk
         }
     }
 
+    const vk::AttachmentDescription DepthBuffer::getAttachmentDescription(const bool loadDepthContent, const bool saveDepthContent, const bool loadStencilContent, const bool saveStencilContent) const
+    {
+        vk::AttachmentDescription description;
+        description.setFormat(image.getFormat())
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setLoadOp(loadDepthContent ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eDontCare)
+            .setStoreOp(saveDepthContent ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare)
+            .setStencilLoadOp(loadStencilContent ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eDontCare)
+            .setStencilStoreOp(saveStencilContent ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    }
+
     const vk::ImageView& DepthBuffer::getView() const
     {
         return view;

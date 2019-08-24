@@ -16,6 +16,8 @@ namespace spk
         void cleanResources();
         ~DepthBuffer();
     private:
+        friend class RenderSystem;
+        const vk::AttachmentDescription getAttachmentDescription(const bool loadDepthContent, const bool saveDepthContent, const bool loadStencilContent, const bool saveStencilContent) const;
         const vk::ImageView& getView() const;
         HardwareImageBuffer image;
         vk::ImageView view;
