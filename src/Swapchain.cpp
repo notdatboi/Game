@@ -112,9 +112,22 @@ namespace spk
         
         swapchainImageViews.resize(imageCount);
         int i = 0;
+
+        vk::ComponentMapping components;
+        components.setR(vk::ComponentSwizzle::eR)
+            .setG(vk::ComponentSwizzle::eG)
+            .setB(vk::ComponentSwizzle::eB)
+            .setA(vk::ComponentSwizzle::eA);
+
         for(auto& view : swapchainImageViews)
         {
-            view.create(swapchainImages[i], chosenFormat.format, range);
+            vk::ImageViewCreateInfo viewInfo;
+            viewInfo.setComponents(components)
+                .setFormat(chosenFormat.format)
+                .setImage(swapchainImages[i])
+                .setSubresourceRange(range)
+                .setViewType(vk::ImageViewType::e2D);
+            if(logicalDevice.createImageView(&viewInfo, nullptr, &swapchainImageViews[i]) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image view!\n");
             ++i;
         }
     }
@@ -129,7 +142,7 @@ namespace spk
         return index;
     }
 
-    const std::vector<ImageView>& Swapchain::getImageViews() const
+    const std::vector<vk::ImageView>& Swapchain::getImageViews() const
     {
         return swapchainImageViews;
     }
@@ -146,7 +159,11 @@ namespace spk
         {
             for(auto& view : swapchainImageViews)
             {
-                view.destroy();
+                if(view)
+                {
+                    logicalDevice.destroyImageView(view, nullptr);
+                    view = vk::ImageView();
+                }
             }
         }
         if(swapchain)

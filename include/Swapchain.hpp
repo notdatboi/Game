@@ -1,10 +1,9 @@
 #ifndef SPARK_SWAPCHAIN_HPP
 #define SPARK_SWAPCHAIN_HPP
 
-#include"SparkIncludeBase.hpp"
-#include"System.hpp"
-#include"Executives.hpp"
-#include"ImageView.hpp"
+#include<SparkIncludeBase.hpp>
+#include<System.hpp>
+#include<Executives.hpp>
 #include<vector>
 
 namespace spk
@@ -32,14 +31,14 @@ namespace spk
             const bool clipped,
             const vk::SwapchainKHR& oldSwapchain = vk::SwapchainKHR());
         const uint32_t acquireNextImageIndex(const vk::Semaphore& signalSemaphore, const vk::Fence& signalFence) const;
-        const std::vector<ImageView>& getImageViews() const;
+        const std::vector<vk::ImageView>& getImageViews() const;
         const vk::SwapchainKHR& getSwapchain() const;
         void destroy();
         ~Swapchain();
     private:
         vk::SwapchainKHR swapchain;
         std::vector<vk::Image> swapchainImages;
-        std::vector<ImageView> swapchainImageViews;
+        std::vector<vk::ImageView> swapchainImageViews;
     };
 }
 
