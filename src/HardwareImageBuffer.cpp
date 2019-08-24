@@ -325,6 +325,11 @@ namespace spk
         graphicsQueue.submit(1, &submit, readyFence);
     }
 
+    void HardwareImageBuffer::reportLayoutChange(const vk::ImageLayout newLayout)
+    {
+        subresourceLayouts[0] = newLayout;
+    }
+
     const vk::Image& HardwareImageBuffer::getVkImage() const
     {
         return image;

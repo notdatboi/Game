@@ -33,6 +33,9 @@ namespace spk
         virtual void clearResources();
         virtual ~HardwareImageBuffer();
     private:
+        friend class RenderTexture;
+        void reportLayoutChange(const vk::ImageLayout newLayout);
+
         bool useShadowBuffer = false;
         system::AllocatedMemoryData shadowMemoryData;
         vk::Buffer shadow;
