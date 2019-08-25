@@ -100,35 +100,22 @@ namespace spk
         if(logicalDevice.createSwapchainKHR(&info, nullptr, &swapchain) != vk::Result::eSuccess) throw std::runtime_error("Failed to crate swapchain!\n");
 
         logicalDevice.getSwapchainImagesKHR(swapchain, &imageCount, nullptr);
+        std::vector<vk::Image> tmpImages(imageCount);
         swapchainImages.resize(imageCount);
-        logicalDevice.getSwapchainImagesKHR(swapchain, &imageCount, swapchainImages.data());
-
-        vk::ImageSubresourceRange range;
-        range.setAspectMask(aspectFlags)
-            .setBaseArrayLayer(0)
-            .setBaseMipLevel(0)
-            .setLayerCount(1)
-            .setLevelCount(1);
-        
         swapchainImageViews.resize(imageCount);
-        int i = 0;
+        logicalDevice.getSwapchainImagesKHR(swapchain, &imageCount, tmpImages.data());
 
-        vk::ComponentMapping components;
-        components.setR(vk::ComponentSwizzle::eR)
-            .setG(vk::ComponentSwizzle::eG)
-            .setB(vk::ComponentSwizzle::eB)
-            .setA(vk::ComponentSwizzle::eA);
-
-        for(auto& view : swapchainImageViews)
+        for(auto index = 0; index < imageCount; ++index)
         {
-            vk::ImageViewCreateInfo viewInfo;
-            viewInfo.setComponents(components)
-                .setFormat(chosenFormat.format)
-                .setImage(swapchainImages[i])
-                .setSubresourceRange(range)
-                .setViewType(vk::ImageViewType::e2D);
-            if(logicalDevice.createImageView(&viewInfo, nullptr, &swapchainImageViews[i]) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image view!\n");
-            ++i;
+            swapchainImages[index].setAspect(aspectFlags);
+            swapchainImages[index].setAccessibility(HardwareResourceAccessibility::Static);
+            swapchainImages[index].setExtent({extent.width, extent.height, 1});
+            swapchainImages[index].setFormat(chosenFormat.format);
+            swapchainImages[index].setMipmapLevelCount(1);
+            swapchainImages[index].setShadowBufferPolicy();
+            swapchainImages[index].setUsage(usageFlags);
+            swapchainImages[index].takeOwnership(tmpImages[index]);
+            swapchainImageViews[index] = swapchainImages[index].produceImageView();
         }
     }
 
@@ -152,6 +139,11 @@ namespace spk
         return swapchain;
     }
 
+    HardwareImageBuffer& Swapchain::getImage(const uint32_t index)
+    {
+        return swapchainImages[index];
+    }
+
     void Swapchain::destroy()
     {
         const vk::Device logicalDevice = system::System::getInstance()->getLogicalDevice();
@@ -165,6 +157,7 @@ namespace spk
                     view = vk::ImageView();
                 }
             }
+            for(auto& image : swapchainImages) image.releaseImage();
         }
         if(swapchain)
         {
