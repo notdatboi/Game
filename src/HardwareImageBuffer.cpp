@@ -84,6 +84,11 @@ namespace spk
         if(useShadowBuffer) this->usage |= vk::ImageUsageFlagBits::eTransferDst;
     }
 
+    void HardwareImageBuffer::setAspect(const vk::ImageAspectFlags aspectFlags)
+    {
+        aspect = aspectFlags;
+    }
+
     void HardwareImageBuffer::load()
     {
         const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
@@ -125,33 +130,40 @@ namespace spk
 
         if(useShadowBuffer)
         {
-            vk::BufferCreateInfo shadowInfo;
-            shadowInfo.setQueueFamilyIndexCount(1)
-                .setPQueueFamilyIndices(queueFamIndices)
-                .setSharingMode(vk::SharingMode::eExclusive)
-                .setSize(extent.width * extent.height * extent.depth)
-                .setUsage(vk::BufferUsageFlagBits::eTransferSrc);
-            
-            if(logicalDevice.createBuffer(&shadowInfo, nullptr, &shadow) != vk::Result::eSuccess) throw std::runtime_error("Failed to create buffer!\n");
-
-            vk::MemoryRequirements shadowMemRequirements;
-            logicalDevice.getBufferMemoryRequirements(shadow, &shadowMemRequirements);
-            system::MemoryAllocationInfo shadowMemInfo(shadowMemRequirements);
-            shadowMemInfo.flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
-            shadowMemoryData = system::MemoryManager::getInstance()->allocateMemory(shadowMemInfo);
-            const vk::DeviceMemory& shadowMem = system::MemoryManager::getInstance()->getMemory(shadowMemoryData.index);
-            if(logicalDevice.bindBufferMemory(shadow, shadowMem, shadowMemoryData.offset) != vk::Result::eSuccess) throw std::runtime_error("Failed to bind memory!\n");
+            allocateShadowBuffer();
         }
 
         loaded = true;
     }
 
-    void HardwareImageBuffer::loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags)
+    void HardwareImageBuffer::allocateShadowBuffer()
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        const uint32_t queueFamIndices[] = {system::Executives::getInstance()->getGraphicsQueueFamilyIndex()};
+        vk::BufferCreateInfo shadowInfo;
+        shadowInfo.setQueueFamilyIndexCount(1)
+            .setPQueueFamilyIndices(queueFamIndices)
+            .setSharingMode(vk::SharingMode::eExclusive)
+            .setSize(extent.width * extent.height * extent.depth)
+            .setUsage(vk::BufferUsageFlagBits::eTransferSrc);
+        
+        if(logicalDevice.createBuffer(&shadowInfo, nullptr, &shadow) != vk::Result::eSuccess) throw std::runtime_error("Failed to create buffer!\n");
+
+        vk::MemoryRequirements shadowMemRequirements;
+        logicalDevice.getBufferMemoryRequirements(shadow, &shadowMemRequirements);
+        system::MemoryAllocationInfo shadowMemInfo(shadowMemRequirements);
+        shadowMemInfo.flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+        shadowMemoryData = system::MemoryManager::getInstance()->allocateMemory(shadowMemInfo);
+        const vk::DeviceMemory& shadowMem = system::MemoryManager::getInstance()->getMemory(shadowMemoryData.index);
+        if(logicalDevice.bindBufferMemory(shadow, shadowMem, shadowMemoryData.offset) != vk::Result::eSuccess) throw std::runtime_error("Failed to bind memory!\n");
+    }
+
+    void HardwareImageBuffer::loadFromVkBuffer(const vk::Buffer& buffer)
     {
         const auto& graphicsQueue = system::Executives::getInstance()->getGraphicsQueue();
 
         vk::ImageSubresourceRange subresourceRange;
-        subresourceRange.setAspectMask(aspectFlags)
+        subresourceRange.setAspectMask(aspect)
             .setBaseArrayLayer(0)
             .setLayerCount(1)
             .setBaseMipLevel(0)
@@ -165,7 +177,7 @@ namespace spk
 
         //changeLayout(vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, subresourceRange);
         vk::ImageSubresourceLayers subresource;
-        subresource.setAspectMask(aspectFlags)
+        subresource.setAspectMask(aspect)
             .setBaseArrayLayer(subresourceRange.baseArrayLayer)
             .setLayerCount(subresourceRange.layerCount)
             .setMipLevel(subresourceRange.baseMipLevel);
@@ -217,6 +229,17 @@ namespace spk
             .setPWaitDstStageMask(&stageFlags);
 
         graphicsQueue.submit(1, &submit, readyFence);
+    }
+
+    void HardwareImageBuffer::takeOwnership(vk::Image& image)
+    {
+        if(useShadowBuffer) allocateShadowBuffer();
+        this->image = image;
+    }
+
+    void HardwareImageBuffer::releaseImage()
+    {
+        image = vk::Image();
     }
 
     void HardwareImageBuffer::changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource)
@@ -434,6 +457,42 @@ namespace spk
             }
         }
         loaded = false;
+    }
+
+    vk::ImageView HardwareImageBuffer::produceImageView(const uint32_t firstMipmapLevel, const uint32_t levelCount) const
+    {
+        const auto& logicalDevice = system::System::getInstance()->getLogicalDevice();
+        
+        vk::ImageView view;
+
+        vk::ImageSubresourceRange subresource;
+        subresource.setBaseArrayLayer(0)
+            .setLayerCount(1)
+            .setBaseMipLevel(firstMipmapLevel)
+            .setLevelCount(levelCount)
+            .setAspectMask(aspect);
+        
+        vk::ComponentMapping componentMapping;
+        componentMapping.setR(vk::ComponentSwizzle::eR)
+            .setG(vk::ComponentSwizzle::eG)
+            .setB(vk::ComponentSwizzle::eB)
+            .setA(vk::ComponentSwizzle::eA);
+
+        vk::ImageViewCreateInfo viewInfo;
+        viewInfo.setFormat(format)
+            .setImage(image)
+            .setComponents(componentMapping)
+            .setSubresourceRange(subresource)
+            .setViewType(vk::ImageViewType::e2D);
+
+        if(logicalDevice.createImageView(&viewInfo, nullptr, &view) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image view!\n");
+
+        return view;
+    }
+
+    vk::ImageView HardwareImageBuffer::produceImageView() const
+    {
+        return produceImageView(0, levelCount);
     }
 
     HardwareImageBuffer::~HardwareImageBuffer()

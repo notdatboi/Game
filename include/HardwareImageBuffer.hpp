@@ -18,14 +18,21 @@ namespace spk
         void setMipmapLevelCount(const uint32_t levelCount);        // must be called before loading, 1 means no mipmaps
         void setExtent(const vk::Extent3D extent);                  // sets extent, must be called before loading
         void setUsage(const vk::ImageUsageFlags usage);             // sets usage, must be called before loading
+        void setAspect(const vk::ImageAspectFlags aspectFlags);
         virtual void load();                                                
-        void loadFromVkBuffer(const vk::Buffer& buffer, const vk::ImageAspectFlags aspectFlags);
+        void loadFromVkBuffer(const vk::Buffer& buffer);
+
+        void takeOwnership(vk::Image& image);
+        void releaseImage();
+        
         void changeLayout(/*const vk::ImageLayout oldLayout, */const vk::ImageLayout newLayout, const vk::ImageSubresourceRange subresource);
         void blit(const vk::Image& dstImage, const vk::ImageLayout srcLayout, const vk::ImageLayout dstLayout, const vk::ImageBlit blitInfo);
         virtual void waitUntilReady() const;
         virtual void resetWaiter();
         static const std::optional<vk::Format> getSupportedFormat(const std::vector<vk::Format> formats, const vk::ImageTiling tiling, const vk::FormatFeatureFlags flags);
-
+        
+        vk::ImageView produceImageView(const uint32_t firstMipmapLevel, const uint32_t levelCount) const;
+        vk::ImageView produceImageView() const;
         const vk::Image& getVkImage() const;
         const uint32_t getMipmapLevelCount() const;
         const vk::Format getFormat() const;
@@ -39,6 +46,7 @@ namespace spk
         bool useShadowBuffer = false;
         system::AllocatedMemoryData shadowMemoryData;
         vk::Buffer shadow;
+        void allocateShadowBuffer();
 
         HardwareResourceAccessibility accessibility;
 
@@ -54,6 +62,7 @@ namespace spk
         uint32_t levelCount;
         vk::Extent3D extent;
         vk::ImageUsageFlags usage;
+        vk::ImageAspectFlags aspect;
 
         bool loaded;
     };
