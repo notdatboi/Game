@@ -8,10 +8,14 @@ namespace spk
         image.setAccessibility(HardwareResourceAccessibility::Static);
         image.setMipmapLevelCount(1);
         image.setShadowBufferPolicy(false);
+        image.setAspect(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
     }
 
     void DepthBuffer::setFormat(const vk::Format format)
     {
+        vk::FormatFeatureFlags neededFormatFeatures = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+        if(HardwareImageBuffer::getSupportedFormat({format}, vk::ImageTiling::eOptimal, neededFormatFeatures).has_value()) image.setFormat(format);
+        else throw std::invalid_argument("Invalid or not supported image format.\n");
         image.setFormat(format);
     }
 
@@ -33,13 +37,7 @@ namespace spk
             .setLevelCount(1);
         image.changeLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal, subresource);
 
-        vk::ImageViewCreateInfo viewInfo;
-        viewInfo.setImage(image.getVkImage())
-            .setViewType(vk::ImageViewType::e2D)
-            .setFormat(image.getFormat())
-            .setComponents(vk::ComponentMapping())
-            .setSubresourceRange(subresource);
-        logicalDevice.createImageView(&viewInfo, nullptr, &view);
+        view = image.produceImageView(0, 1);
     }
 
     void DepthBuffer::waitUntilReady() const

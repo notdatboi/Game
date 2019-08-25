@@ -21,6 +21,7 @@ namespace spk
         catch(std::runtime_error err){}
         image.setAccessibility(HardwareResourceAccessibility::Static);
         image.setShadowBufferPolicy(false);
+        image.setAspect(vk::ImageAspectFlagBits::eColor);
         usage = /*vk::ImageUsageFlagBits::eColorAttachment | */vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
     }
 
@@ -69,7 +70,7 @@ namespace spk
             image.setUsage(usage);
         }
         
-        image.loadFromVkBuffer(src.getData(), vk::ImageAspectFlagBits::eColor);        
+        image.loadFromVkBuffer(src.getData());
         
         if(!view) createView();
         if(!sampler) createSampler();
@@ -129,29 +130,7 @@ namespace spk
 
     void Texture::createView()
     {
-        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
-
-        vk::ImageSubresourceRange subresource;
-        subresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
-            .setBaseArrayLayer(0)
-            .setLayerCount(1)
-            .setBaseMipLevel(0)
-            .setLevelCount(image.getMipmapLevelCount());
-
-        vk::ComponentMapping components;
-        components.setR(vk::ComponentSwizzle::eR)
-            .setG(vk::ComponentSwizzle::eG)
-            .setB(vk::ComponentSwizzle::eB)
-            .setA(vk::ComponentSwizzle::eA);
-
-        vk::ImageViewCreateInfo viewInfo;
-        viewInfo.setImage(image.getVkImage())
-            .setViewType(vk::ImageViewType::e2D)
-            .setFormat(image.getFormat())
-            .setComponents(components)
-            .setSubresourceRange(subresource);
-
-        if(logicalDevice.createImageView(&viewInfo, nullptr, &view) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image view!\n");
+        view = image.produceImageView();
     }
 
     void Texture::createSampler()

@@ -47,29 +47,7 @@ namespace spk
 
     void RenderTexture::createView()
     {
-        const vk::Device& logicalDevice = system::System::getInstance()->getLogicalDevice();
-
-        vk::ImageSubresourceRange subresource;
-        subresource.setAspectMask(vk::ImageAspectFlagBits::eColor)
-            .setBaseArrayLayer(0)
-            .setLayerCount(1)
-            .setBaseMipLevel(0)
-            .setLevelCount(image.getMipmapLevelCount());
-
-        vk::ComponentMapping components;
-        components.setR(vk::ComponentSwizzle::eR)
-            .setG(vk::ComponentSwizzle::eG)
-            .setB(vk::ComponentSwizzle::eB)
-            .setA(vk::ComponentSwizzle::eA);
-
-        vk::ImageViewCreateInfo viewInfo;
-        viewInfo.setImage(image.getVkImage())
-            .setViewType(vk::ImageViewType::e2D)
-            .setFormat(image.getFormat())
-            .setComponents(components)
-            .setSubresourceRange(subresource);
-
-        if(logicalDevice.createImageView(&viewInfo, nullptr, &view) != vk::Result::eSuccess) throw std::runtime_error("Failed to create image view!\n");
+        view = image.produceImageView();
     }
 
     void RenderTexture::waitUntilReady() const
