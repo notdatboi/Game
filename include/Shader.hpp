@@ -1,7 +1,6 @@
 #ifndef SPARK_SHADER_HPP
 #define SPARK_SHADER_HPP
 
-#include"System.hpp"
 #include<string>
 #include<glslang/Public/ShaderLang.h>
 #include<SPIRV/GlslangToSpv.h>
