@@ -12,21 +12,9 @@ void System::create(const Window& window, const bool enableDebug, const VkPhysic
     createDevice(enabledFeatures);
 }
 
-void System::createSwapchain(Swapchain& swapchain) const
+const VkPhysicalDevice& System::getPhysicalDevice() const
 {
-    uint32_t queueFamilyIndexCount = 0;
-    if(graphicsQueue.familyIndex == presentQueue.familyIndex)
-    {
-        queueFamilyIndexCount = 1;
-        const uint32_t queueFamilies[] = {graphicsQueue.familyIndex};
-        swapchain.create(device, physicalDevice, surface, queueFamilyIndexCount, queueFamilies);
-    }
-    else
-    {
-        queueFamilyIndexCount = 2;
-        const uint32_t queueFamilies[] = {graphicsQueue.familyIndex, presentQueue.familyIndex};
-        swapchain.create(device, physicalDevice, surface, queueFamilyIndexCount, queueFamilies);
-    }
+    return physicalDevice;
 }
 
 const VkDevice& System::getDevice() const
@@ -42,6 +30,11 @@ const QueueInfo& System::getPresentQueue() const
 const QueueInfo& System::getGraphicsQueue() const
 {
     return graphicsQueue;
+}
+
+const VkSurfaceKHR& System::getSurface() const
+{
+    return surface;
 }
 
 void System::createInstance(const Array<const char*>& customExtensions, const bool enableDebug)

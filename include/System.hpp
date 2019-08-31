@@ -2,7 +2,6 @@
 #define SYSTEM_HPP
 #include<vulkan/vulkan.h>
 #include<Window.hpp>
-#include<Swapchain.hpp>
 
 struct QueueInfo
 {
@@ -15,7 +14,8 @@ class System
 public:
     System();
     void create(const Window& window, const bool enableDebug, const VkPhysicalDeviceFeatures& enabledFeatures);
-    void createSwapchain(Swapchain& swapchain) const;
+    const VkPhysicalDevice& getPhysicalDevice() const;
+    const VkSurfaceKHR& getSurface() const;
     const VkDevice& getDevice() const;
     const QueueInfo& getPresentQueue() const;
     const QueueInfo& getGraphicsQueue() const;
