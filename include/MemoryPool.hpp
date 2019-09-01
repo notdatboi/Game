@@ -9,7 +9,7 @@ public:
     void create(const System* system, const uint32_t memoryObjectCount);
     const VkDeviceMemory& operator[](const uint32_t index) const;
     VkDeviceMemory& operator[](const uint32_t index);
-    Array<uint32_t> allocate(const Array<VkMemoryRequirements>& group, const uint32_t memoryObjectIndex, const bool forceGroupAlloc = false);   // returns offsets
+    Array<uint32_t> allocate(const Array<VkMemoryRequirements>& group, const uint32_t memoryObjectIndex);   // returns offsets
     void destroy();
     ~MemoryPool();
 private:

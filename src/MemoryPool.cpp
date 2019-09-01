@@ -1,5 +1,4 @@
 #include<MemoryPool.hpp>
-#include<numeric>
 
 MemoryPool::MemoryPool(){}
 
@@ -9,7 +8,7 @@ void MemoryPool::create(const System* system, const uint32_t memoryObjectCount)
     memory.create(memoryObjectCount);
 }
 
-Array<uint32_t> MemoryPool::allocate(const Array<VkMemoryRequirements>& group, const uint32_t memoryObjectIndex, const bool forceGroupAlloc)
+Array<uint32_t> MemoryPool::allocate(const Array<VkMemoryRequirements>& group, const uint32_t memoryObjectIndex)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(system->getPhysicalDevice(), &memoryProperties);
@@ -24,11 +23,7 @@ Array<uint32_t> MemoryPool::allocate(const Array<VkMemoryRequirements>& group, c
         size += group[ind].size;
         if(alignment != group[ind].alignment)
         {
-            if(forceGroupAlloc)
-            {
-                alignment = std::lcm(alignment, group[ind].alignment);
-            }
-            else reportError("Group members have different alignments.\n");
+            reportError("Group members have different alignments.\n");
         }
     }
     if(memoryType == 0) reportError("No way to choose common memory type.\n");
