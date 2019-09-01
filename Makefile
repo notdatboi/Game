@@ -6,90 +6,35 @@ OBJS=$(patsubst src/%.cpp,obj/%.o,$(SOURCES))
 
 all: $(OBJS)
 
-obj/Executives.o: src/Executives.cpp \
-	include/Executives.hpp \
-	include/SparkIncludeBase.hpp \
-	include/System.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/MemoryManager.o: src/MemoryManager.cpp \
-	include/MemoryManager.hpp \
-	include/SparkIncludeBase.hpp \
-	include/System.hpp 
-	$(CC) -c $< -o $@ -g
-
 obj/System.o: src/System.cpp \
-	include/System.hpp \
-	include/Executives.hpp \
-	include/SparkIncludeBase.hpp
+	include/Utils.hpp \
+	include/Window.hpp 
 	$(CC) -c $< -o $@ -g
 
-obj/ShaderSet.o: src/ShaderSet.cpp \
-	include/Shader.hpp \
-	include/ShaderSet.hpp \
-	include/System.hpp \
-	include/SparkIncludeBase.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/Shader.o: src/Shader.cpp \
-	include/Glslang/DirStackFileIncluder.h \
-	include/Shader.hpp \
-	include/System.hpp \
-	include/SparkIncludeBase.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/Image.o: src/Image.cpp \
-	include/Image.hpp \
-	include/System.hpp \
-	include/Executives.hpp \
-	include/MemoryManager.hpp \
-	include/SparkIncludeBase.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/ImageView.o: src/ImageView.cpp \
-	include/ImageView.hpp \
-	include/System.hpp \
-	include/SparkIncludeBase.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/Buffer.o: src/Buffer.cpp \
-	include/Buffer.hpp \
-	include/System.hpp \
-	include/Executives.hpp \
-	include/MemoryManager.hpp \
-	include/SparkIncludeBase.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/Subpass.o: src/Subpass.cpp \
-	include/Subpass.hpp \
-	include/SparkIncludeBase.hpp \
-	include/Executives.hpp \
-	include/System.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/RenderPass.o: src/RenderPass.cpp \
-	include/RenderPass.hpp \
-	include/SparkIncludeBase.hpp \
-	include/Executives.hpp \
-	include/System.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/Pipeline.o: src/Pipeline.cpp \
-	include/Pipeline.hpp \
-	include/SparkIncludeBase.hpp \
-	include/System.hpp
-	$(CC) -c $< -o $@ -g
-
-obj/DescriptorPool.o: src/DescriptorPool.cpp \
-	include/DescriptorPool.hpp \
-	include/SparkIncludeBase.hpp \
-	include/System.hpp
+obj/MemoryPool.o: src/MemoryPool.cpp \
+	include/MemoryPool.hpp \
+	include/Utils.hpp \
+	include/System.hpp 
 	$(CC) -c $< -o $@ -g
 
 obj/Swapchain.o: src/Swapchain.cpp \
 	include/Swapchain.hpp \
-	include/SparkIncludeBase.hpp \
+	include/System.hpp 
+	$(CC) -c $< -o $@ -g
+
+obj/Utils.o: src/Utils.cpp \
+	include/Utils.hpp 
+	$(CC) -c $< -o $@ -g
+
+obj/Window.o: src/Window.cpp \
+	include/Window.hpp \
+	include/Utils.hpp 
+	$(CC) -c $< -o $@ -g
+
+obj/main.o: src/main.cpp \
 	include/System.hpp \
-	include/Executives.hpp \
-	include/ImageView.hpp
+	include/Utils.hpp \
+	include/Swapchain.hpp \
+	include/MemoryPool.hpp \
+	include/Window.hpp
 	$(CC) -c $< -o $@ -g
