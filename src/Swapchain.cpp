@@ -60,7 +60,7 @@ void Swapchain::create(const System* system)
 
     checkResult(vkCreateSwapchainKHR(system->getDevice(), &swapchainInfo, nullptr, &swapchain), "Failed to create swapchain.\n");
 
-    uint32_t imageCount;
+    imageCount = 0;
     vkGetSwapchainImagesKHR(system->getDevice(), swapchain, &imageCount, nullptr);
     images.create(imageCount);
     views.create(imageCount);
@@ -102,6 +102,13 @@ void Swapchain::create(const System* system)
     }
 }
 
+const uint32_t Swapchain::acquireNextImage(const VkSemaphore& signalSemaphore, const VkFence& signalFence) const
+{
+    uint32_t index;
+    checkResult(vkAcquireNextImageKHR(system->getDevice(), swapchain, ~0, signalSemaphore, signalFence, &index), "Failed to acquire image.\n");
+    return index;
+}
+
 const VkImageView& Swapchain::getView(const uint32_t index) const
 {
     return views[index];
@@ -127,4 +134,9 @@ void Swapchain::destroy()
         vkDestroySwapchainKHR(system->getDevice(), swapchain, nullptr);
         swapchain = 0;
     }
+}
+
+Swapchain::~Swapchain()
+{
+    destroy();
 }
