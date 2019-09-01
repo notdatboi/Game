@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 #include<initializer_list>
+#include<vulkan/vulkan.h>
 
 template<typename T>
 class Array
@@ -128,14 +129,8 @@ private:
     unsigned int size;
 };
 
-void checkResult(const VkResult& result, const char* error)
-{
-    if(result != VK_SUCCESS) reportError(error);
-}
+void reportError(const char* error);
 
-void reportError(const char* error)
-{
-    throw error;
-}
+void checkResult(const VkResult& result, const char* error);
 
 #endif
