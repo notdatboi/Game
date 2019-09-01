@@ -19,6 +19,7 @@ public:
     const VkDevice& getDevice() const;
     const QueueInfo& getPresentQueue() const;
     const QueueInfo& getGraphicsQueue() const;
+    void destroy();
     ~System();
 private:
     VkInstance instance;
@@ -27,10 +28,7 @@ private:
     VkSurfaceKHR surface;
     QueueInfo graphicsQueue;
     QueueInfo presentQueue;
-    static Array<const char*> generateInstanceExtensions(const Array<const char*>& customExtensions, const bool enableDebug);
-    static Array<const char*> generateInstanceLayers(const bool enableDebug);
-    static Array<const char*> generateDeviceExtensions();
-    void createInstance(const Array<const char*>& customExtensions, const bool enableDebug);
+    void createInstance(const char** customExtensions, const uint32_t& extensionCount, const bool enableDebug);
     void pickPhysicalDevice();
     void pickQueueFamilies();
     void createDevice(const VkPhysicalDeviceFeatures& enabledFeatures);
