@@ -11,7 +11,7 @@ public:
     Window(const char* title, const VkExtent2D& size);
     void create(const char* title, const VkExtent2D& size);
     GLFWwindow* getWindow();
-    Array<const char*> getVulkanExtensions() const;
+    const char** getVulkanExtensions(uint32_t& count) const;
     VkSurfaceKHR getVulkanSurface(const VkInstance& instance) const;
     VkExtent2D getWindowSize() const;
     ~Window();

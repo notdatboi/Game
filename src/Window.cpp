@@ -1,9 +1,8 @@
 #include<Window.hpp>
+#include<cstring>
 
 Window::Window()
 {
-    VkExtent2D extent = {640, 480};
-    create("", extent);
 }
 
 Window::Window(const char* title, const VkExtent2D& size)
@@ -14,6 +13,7 @@ Window::Window(const char* title, const VkExtent2D& size)
 void Window::create(const char* title, const VkExtent2D& size)
 {
     this->size = size;
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     window = glfwCreateWindow(size.width, size.height, title, nullptr, nullptr);
 }
 
@@ -22,13 +22,9 @@ GLFWwindow* Window::getWindow()
     return window;
 }
 
-Array<const char*> Window::getVulkanExtensions() const
+const char** Window::getVulkanExtensions(uint32_t& count) const
 {
-    Array<const char*> result;
-    uint32_t extensionCount;
-    const char** extensions = glfwGetRequiredInstanceExtensions(&extensionCount);
-    result.create(extensionCount, extensions);
-    return result;
+    return glfwGetRequiredInstanceExtensions(&count);
 }
 
 VkSurfaceKHR Window::getVulkanSurface(const VkInstance& instance) const
