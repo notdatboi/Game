@@ -1,5 +1,13 @@
 #include<MemoryPool.hpp>
 
+void MemoryPool::align(uint32_t& size, const uint32_t alignment)
+{
+    if(size % alignment != 0)
+    {
+        size = (size / alignment + 1) * alignment;
+    }
+}
+
 MemoryPool::MemoryPool(){}
 
 void MemoryPool::create(const System* system, const uint32_t memoryObjectCount)
@@ -45,6 +53,29 @@ Array<uint32_t> MemoryPool::allocate(const Array<VkMemoryRequirements>& group, c
     };
     checkResult(vkAllocateMemory(system->getDevice(), &memoryInfo, nullptr, &memory[memoryObjectIndex]), "Failed to allocate memory.\n");
     return offsets;
+}
+
+void MemoryPool::allocate(const VkMemoryRequirements& mem, const uint32_t memoryObjectIndex)
+{
+    uint32_t memoryTypeIndex;
+    for(auto ind = 0; ind < sizeof(uint32_t); ++ind)
+    {
+        if(((1 << ind) & mem.memoryTypeBits) != 0)
+        {
+            memoryTypeIndex = ind;
+            break;
+        }
+    }
+    VkMemoryAllocateInfo memoryInfo;
+    memoryInfo = 
+    {
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        nullptr,
+        mem.size,
+        memoryTypeIndex
+    };
+    checkResult(vkAllocateMemory(system->getDevice(), &memoryInfo, nullptr, &memory[memoryObjectIndex]), "Failed to allocate memory.\n");
+
 }
 
 const VkDeviceMemory& MemoryPool::operator[](const uint32_t index) const

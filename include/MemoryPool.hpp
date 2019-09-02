@@ -10,6 +10,8 @@ public:
     const VkDeviceMemory& operator[](const uint32_t index) const;
     VkDeviceMemory& operator[](const uint32_t index);
     Array<uint32_t> allocate(const Array<VkMemoryRequirements>& group, const uint32_t memoryObjectIndex);   // returns offsets
+    void allocate(const VkMemoryRequirements& mem, const uint32_t memoryObjectIndex);
+    static void align(uint32_t& size, const uint32_t alignment);
     void destroy();
     ~MemoryPool();
 private:
