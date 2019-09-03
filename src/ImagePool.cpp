@@ -1,6 +1,76 @@
 #include<ImagePool.hpp>
 #include<cmath>
 
+void ImagePool::recordLayouChangeCommands(VkCommandBuffer& cmd, const VkImageLayout& oldLayout, const VkImageLayout& newLayout, const VkImage& img, const VkImageSubresourceRange& subresource)
+{
+    VkAccessFlags srcAccessFlags, dstAccessFlags;
+    VkPipelineStageFlags srcStageFlags, dstStageFlags;
+    if(oldLayout == VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED)
+    {
+        srcStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        }
+        else if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+        }
+        else if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+        }
+        else reportError("Unsupported layout transition.\n");
+    }
+    else if(oldLayout == VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    {
+        srcStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+        srcAccessFlags = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+        if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+        }
+        else reportError("Unsupported layout transition.\n");
+    }
+    else if(oldLayout == VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    {
+        srcStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+        srcAccessFlags = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+        if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+        }
+        else reportError("Unsupported layout transition.\n");
+    }
+    else reportError("Unsupported layout transition.\n");
+
+    VkImageMemoryBarrier imageBarrier = 
+    {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        nullptr,
+        srcAccessFlags,
+        dstAccessFlags,
+        oldLayout,
+        newLayout,
+        VK_QUEUE_FAMILY_IGNORED,
+        VK_QUEUE_FAMILY_IGNORED,
+        img,
+        subresource
+    };
+
+    vkCmdPipelineBarrier(cmd, srcStageFlags, dstStageFlags, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+}
+
+const uint32_t ImagePool::getMipmapLevelCount(const VkExtent2D& imageExtent)
+{
+    return std::log2(std::min(imageExtent.width, imageExtent.height));
+}
+
 bool ImagePool::checkFormatSupport(const VkFormat& format, const VkFormatFeatureFlags& features, const VkImageTiling& tiling) const
 {
     VkFormatProperties properties;
@@ -24,9 +94,8 @@ void ImagePool::create(const System* system, const uint32_t count)
     images.create(count);
 }
 
-void ImagePool::createImage(const VkFormat& format, const VkExtent3D& extent, const bool useMipmapping, const VkImageUsageFlags& usage, const VkImageAspectFlags& aspect, const bool createView, const bool createSampler, const uint32_t index)
+void ImagePool::createImage(const VkFormat& format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageUsageFlags& usage, const VkImageAspectFlags& aspect, const bool createView, const bool createSampler, const uint32_t index)
 {
-    uint32_t mipLevelCount = useMipmapping ? std::log2(std::min(extent.width, extent.height)) : 1;
     VkImageCreateInfo imageInfo = 
     {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -35,7 +104,7 @@ void ImagePool::createImage(const VkFormat& format, const VkExtent3D& extent, co
         VkImageType::VK_IMAGE_TYPE_2D,
         format,
         extent,
-        mipLevelCount,
+        mipmapLevels,
         1,
         VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
         VkImageTiling::VK_IMAGE_TILING_OPTIMAL,
@@ -60,7 +129,7 @@ void ImagePool::createImage(const VkFormat& format, const VkExtent3D& extent, co
         {
             aspect,
             0,
-            mipLevelCount,
+            mipmapLevels,
             0,
             1
         };
@@ -97,7 +166,7 @@ void ImagePool::createImage(const VkFormat& format, const VkExtent3D& extent, co
             VK_FALSE,
             VkCompareOp::VK_COMPARE_OP_ALWAYS,
             0,
-            mipLevelCount - 1,
+            mipmapLevels - 1,
             VkBorderColor::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
             VK_FALSE
         };
