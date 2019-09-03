@@ -78,6 +78,31 @@ void MemoryPool::allocate(const VkMemoryRequirements& mem, const uint32_t memory
 
 }
 
+void* MemoryPool::map(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size)
+{
+    void* data;
+    checkResult(vkMapMemory(system->getDevice(), memory[memoryObjectIndex], offset, size, 0, &data), "Failed to map memory.\n");
+    return data;
+}
+
+void MemoryPool::flush(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size)
+{
+    VkMappedMemoryRange range = 
+    {
+        VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        nullptr,
+        memory[memoryObjectIndex],
+        offset,
+        size
+    };
+    checkResult(vkFlushMappedMemoryRanges(system->getDevice(), 1, &range), "Failed to flush memory.\n");
+}
+
+void MemoryPool::unmap(const uint32_t memoryObjectIndex)
+{
+    vkUnmapMemory(system->getDevice(), memory[memoryObjectIndex]);
+}
+
 const VkDeviceMemory& MemoryPool::operator[](const uint32_t index) const
 {
     return memory[index];
