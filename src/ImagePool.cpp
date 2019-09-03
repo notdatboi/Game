@@ -216,7 +216,9 @@ void ImagePool::destroy()
             images[index].image = 0;
         }
     }
+    images.clean();
 }
+
 ImagePool::~ImagePool()
 {
     destroy();

@@ -51,6 +51,7 @@ void CommandPool::destroy()
         vkDestroyCommandPool(system->getDevice(), pool, nullptr);
         pool = 0;
     }
+    commandBuffers.clean();
 }
 
 CommandPool::~CommandPool()

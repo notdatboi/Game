@@ -134,6 +134,8 @@ void Swapchain::destroy()
         vkDestroySwapchainKHR(system->getDevice(), swapchain, nullptr);
         swapchain = 0;
     }
+    images.clean();
+    views.clean();
 }
 
 Swapchain::~Swapchain()

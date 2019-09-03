@@ -59,6 +59,7 @@ void BufferPool::destroy()
             buffers[ind] = 0;
         }
     }
+    buffers.clean();
 }
 
 BufferPool::~BufferPool()
