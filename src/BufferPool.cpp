@@ -11,7 +11,7 @@ void BufferPool::create(const System* system, const uint32_t count)
     buffers.create(count);
 }
 
-void BufferPool::createBuffer(const VkDeviceSize& size, const VkBufferUsageFlags& usage, const uint32_t index)
+void BufferPool::createBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const uint32_t index)
 {
     VkBufferCreateInfo bufferInfo = 
     {

@@ -31,7 +31,7 @@ void DescriptorPool::allocateSets(const uint32_t first, const Array<VkDescriptor
     checkResult(vkAllocateDescriptorSets(system->getDevice(), &allocInfo, &sets[first]), "Failed to allocate descriptor sets.\n");
 }
 
-void DescriptorPool::updateDescriptorSets(const VkDescriptorImageInfo* img, const VkDescriptorBufferInfo* buf, const VkDescriptorType& type, const uint32_t set, const uint32_t binding, const uint32_t arrayElement = 0, const uint32_t descriptorCount = 1)
+void DescriptorPool::updateDescriptorSets(const VkDescriptorImageInfo* img, const VkDescriptorBufferInfo* buf, const VkDescriptorType type, const uint32_t set, const uint32_t binding, const uint32_t arrayElement = 0, const uint32_t descriptorCount = 1)
 {
     VkWriteDescriptorSet write = 
     {
@@ -49,12 +49,12 @@ void DescriptorPool::updateDescriptorSets(const VkDescriptorImageInfo* img, cons
     vkUpdateDescriptorSets(system->getDevice(), 1, &write, 0, nullptr);
 }
 
-void DescriptorPool::updateImage(const VkDescriptorImageInfo& info, const VkDescriptorType& type, const uint32_t set, const uint32_t binding, const uint32_t arrayElement = 0, const uint32_t descriptorCount = 1)
+void DescriptorPool::updateImage(const VkDescriptorImageInfo& info, const VkDescriptorType type, const uint32_t set, const uint32_t binding, const uint32_t arrayElement = 0, const uint32_t descriptorCount = 1)
 {
     updateDescriptorSets(&info, nullptr, type, set, binding, arrayElement, descriptorCount);
 }
 
-void DescriptorPool::updateBuffer(const VkDescriptorBufferInfo& info, const VkDescriptorType& type, const uint32_t set, const uint32_t binding, const uint32_t arrayElement = 0, const uint32_t descriptorCount = 1)
+void DescriptorPool::updateBuffer(const VkDescriptorBufferInfo& info, const VkDescriptorType type, const uint32_t set, const uint32_t binding, const uint32_t arrayElement = 0, const uint32_t descriptorCount = 1)
 {
     updateDescriptorSets(nullptr, &info, type, set, binding, arrayElement, descriptorCount);
 }

@@ -21,7 +21,7 @@ void CommandPool::create(const System* system, const uint32_t commandBufferCount
     checkResult(vkCreateCommandPool(system->getDevice(), &poolInfo, nullptr, &pool), "Failed to create command pool.\n");
 }
 
-void CommandPool::allocateCommandBuffers(const uint32_t first, const uint32_t count, const VkCommandBufferLevel& level)
+void CommandPool::allocateCommandBuffers(const uint32_t first, const uint32_t count, const VkCommandBufferLevel level)
 {
     VkCommandBufferAllocateInfo allocation = 
     {

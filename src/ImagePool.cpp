@@ -1,7 +1,7 @@
 #include<ImagePool.hpp>
 #include<cmath>
 
-void ImagePool::recordLayouChangeCommands(VkCommandBuffer& cmd, const VkImageLayout& oldLayout, const VkImageLayout& newLayout, const VkImage& img, const VkImageSubresourceRange& subresource)
+void ImagePool::recordLayouChangeCommands(VkCommandBuffer& cmd, const VkImageLayout oldLayout, const VkImageLayout newLayout, const VkImage& img, const VkImageSubresourceRange& subresource)
 {
     VkAccessFlags srcAccessFlags, dstAccessFlags;
     VkPipelineStageFlags srcStageFlags, dstStageFlags;
@@ -71,7 +71,7 @@ const uint32_t ImagePool::getMipmapLevelCount(const VkExtent2D& imageExtent)
     return std::log2(std::min(imageExtent.width, imageExtent.height));
 }
 
-bool ImagePool::checkFormatSupport(const VkFormat& format, const VkFormatFeatureFlags& features, const VkImageTiling& tiling) const
+bool ImagePool::checkFormatSupport(const VkFormat format, const VkFormatFeatureFlags features, const VkImageTiling tiling) const
 {
     VkFormatProperties properties;
     vkGetPhysicalDeviceFormatProperties(system->getPhysicalDevice(), format, &properties);
@@ -94,7 +94,7 @@ void ImagePool::create(const System* system, const uint32_t count)
     images.create(count);
 }
 
-void ImagePool::createImage(const VkFormat& format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageUsageFlags& usage, const VkImageAspectFlags& aspect, const bool createView, const bool createSampler, const uint32_t index)
+void ImagePool::createImage(const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler, const uint32_t index)
 {
     VkImageCreateInfo imageInfo = 
     {

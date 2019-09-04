@@ -7,7 +7,7 @@ class BufferPool
 public:
     BufferPool();
     void create(const System* system, const uint32_t count);
-    void createBuffer(const VkDeviceSize& size, const VkBufferUsageFlags& usage, const uint32_t index);
+    void createBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const uint32_t index);
     const VkMemoryRequirements getMemoryRequirements(const uint32_t index);
     void bindMemory(const VkDeviceMemory& memory, const uint32_t offset, const uint32_t bufferIndex);
     const VkBuffer& operator[](const uint32_t index) const;
