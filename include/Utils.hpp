@@ -30,8 +30,11 @@ public:
         *this = other;
     }
 
-    Array(Array&& other): array(other.array), size(other.size)
+    Array(Array&& other)
     {
+        clean();
+        array = other.array;
+        size = other.size;
         other.array = nullptr;
         other.size = 0;
     }
@@ -47,6 +50,7 @@ public:
 
     void create(const unsigned int size = 0)
     {
+        clean();
         array = new T[size];
         this->size = size;
     }
