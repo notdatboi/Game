@@ -3,6 +3,12 @@
 #include<initializer_list>
 #include<vulkan/vulkan.h>
 
+struct ShaderStageInfo
+{
+    VkShaderStageFlagBits stage;
+    VkShaderModule module;
+};
+
 template<typename T>
 class Array
 {

@@ -2,12 +2,6 @@
 #define GRAPHICS_PIPELINE_UTILS_HPP
 #include<System.hpp>
 
-struct ShaderStageInfo
-{
-    VkShaderStageFlagBits stage;
-    VkShaderModule module;
-};
-
 class PipelineInfoBuilder                   // all arrays must not be deleted while builder may use them
 {
 public:
