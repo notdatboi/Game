@@ -101,6 +101,18 @@ public:
         return *this;
     }
 
+    Array& operator=(const std::initializer_list<T>& lst)
+    {
+        clean();
+        create(lst.size());
+        auto listIterator = std::begin(lst);
+        for(unsigned int ind = 0; ind < size; ++ind)
+        {
+            (*this)[ind] = *listIterator;
+            ++listIterator;
+        }
+    }
+
     const bool empty() const
     {
         return size == 0;
