@@ -141,6 +141,11 @@ const uint32_t Swapchain::getImageCount() const
     return images.getSize();
 }
 
+const VkSwapchainKHR& Swapchain::getSwapchain() const
+{
+    return swapchain;
+}
+
 const VkImageView& Swapchain::getView(const uint32_t index) const
 {
     return views[index];
