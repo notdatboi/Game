@@ -174,6 +174,25 @@ void ImagePool::createImage(const VkFormat format, const VkExtent3D& extent, con
     }
 }
 
+void ImagePool::destroyImage(const uint32_t index)
+{
+    if(images[index].view)
+    {
+        vkDestroyImageView(system->getDevice(), images[index].view, nullptr);
+        images[index].view = 0;
+    }
+    if(images[index].sampler)
+    {
+        vkDestroySampler(system->getDevice(), images[index].sampler, nullptr);
+        images[index].sampler = 0;
+    }
+    if(images[index].image)
+    {
+        vkDestroyImage(system->getDevice(), images[index].image, nullptr);
+        images[index].image = 0;
+    }
+}
+
 const VkMemoryRequirements ImagePool::getMemoryRequirements(const uint32_t index)
 {
     VkMemoryRequirements requirements;
@@ -200,21 +219,7 @@ void ImagePool::destroy()
 {
     for(auto index = 0; index < images.getSize(); ++index)
     {
-        if(images[index].view)
-        {
-            vkDestroyImageView(system->getDevice(), images[index].view, nullptr);
-            images[index].view = 0;
-        }
-        if(images[index].sampler)
-        {
-            vkDestroySampler(system->getDevice(), images[index].sampler, nullptr);
-            images[index].sampler = 0;
-        }
-        if(images[index].image)
-        {
-            vkDestroyImage(system->getDevice(), images[index].image, nullptr);
-            images[index].image = 0;
-        }
+        destroyImage(index);
     }
     images.clean();
 }

@@ -18,6 +18,7 @@ public:
     void create(const System* system, const uint32_t count);
     bool checkFormatSupport(const VkFormat format, const VkFormatFeatureFlags features, const VkImageTiling tiling = VkImageTiling::VK_IMAGE_TILING_OPTIMAL) const;
     void createImage(const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler, const uint32_t index);
+    void destroyImage(const uint32_t index);
     const VkMemoryRequirements getMemoryRequirements(const uint32_t index);
     void bindMemory(const VkDeviceMemory& memory, const uint32_t offset, const uint32_t imageIndex);
     const ImageInfo& operator[](const uint32_t index) const;
