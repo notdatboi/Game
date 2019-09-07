@@ -11,6 +11,15 @@ void BufferPool::create(const System* system, const uint32_t count)
     buffers.create(count);
 }
 
+void BufferPool::destroyBuffer(const uint32_t index)
+{
+    if(buffers[index])
+    {
+        vkDestroyBuffer(system->getDevice(), buffers[index], nullptr);
+        buffers[index] = 0;
+    }
+}
+
 void BufferPool::createBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const uint32_t index)
 {
     VkBufferCreateInfo bufferInfo = 
@@ -53,11 +62,7 @@ void BufferPool::destroy()
 {
     for(auto ind = 0; ind < buffers.getSize(); ++ind)
     {
-        if(buffers[ind])
-        {
-            vkDestroyBuffer(system->getDevice(), buffers[ind], nullptr);
-            buffers[ind] = 0;
-        }
+        destroyBuffer(ind);
     }
     buffers.clean();
 }
