@@ -41,7 +41,12 @@ const VkSemaphore& SynchronizationPool::getSemaphore(const uint32_t index) const
     return semaphores[index];
 }
 
-void SynchronizationPool::resetFences(const uint32_t first, const uint32_t count = 1)
+void SynchronizationPool::waitForFences(const uint32_t first, const uint32_t count, const VkBool32 waitAll, const uint64_t timeout) const
+{
+    checkResult(vkWaitForFences(system->getDevice(), count, &fences[first], waitAll, timeout), "Failed to wait for fences.\n");
+}
+
+void SynchronizationPool::resetFences(const uint32_t first, const uint32_t count = 1) const
 {
     checkResult(vkResetFences(system->getDevice(), count, &fences[first]), "Failed to reset fences.\n");
 }

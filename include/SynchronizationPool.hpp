@@ -12,7 +12,8 @@ public:
     void createSemaphore(const uint32_t index);
     const VkFence& getFence(const uint32_t index) const;
     const VkSemaphore& getSemaphore(const uint32_t index) const;
-    void resetFences(const uint32_t first, const uint32_t count = 1);
+    void waitForFences(const uint32_t first, const uint32_t count = 1, const VkBool32 waitAll = VK_TRUE, const uint64_t timeout = (~0ull)) const;
+    void resetFences(const uint32_t first, const uint32_t count = 1) const;
     void destroy();
     ~SynchronizationPool();
 private:
