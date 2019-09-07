@@ -5,7 +5,7 @@ Swapchain::Swapchain()
 
 }
 
-void Swapchain::create(const System* system)
+void Swapchain::create(const System* system, uint32_t& imageCount, const VkFormat preferredFormat)
 {
     this->system = system;
     const VkPhysicalDevice& physicalDevice = system->getPhysicalDevice();
@@ -27,14 +27,31 @@ void Swapchain::create(const System* system)
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, nullptr);
     formats.create(surfaceFormatCount);
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, formats.getPtr());
+    VkSurfaceFormatKHR chosenFormat;
+    if(preferredFormat != VkFormat::VK_FORMAT_UNDEFINED)
+    {
+        for(auto ind = 0; ind < formats.getSize(); ++ind)
+        {
+            if(formats[ind].format == format)
+            {
+                chosenFormat = formats[ind];
+                break;
+            }
+        }
+    }
+    else
+    {
+        chosenFormat = formats[0];
+    }
+    format = chosenFormat.format;
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
-    uint32_t imageCount = 3;
     if(imageCount > surfaceCapabilities.maxImageCount) imageCount = surfaceCapabilities.maxImageCount;
     if(imageCount < surfaceCapabilities.minImageCount) imageCount = surfaceCapabilities.minImageCount;
     VkImageUsageFlags neededUsageFlags = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     if((surfaceCapabilities.supportedUsageFlags & neededUsageFlags) != neededUsageFlags) reportError("Invalid surface.\n");
 
+    extent = surfaceCapabilities.currentExtent;
     VkSwapchainCreateInfoKHR swapchainInfo;
     swapchainInfo = 
     {
@@ -43,9 +60,9 @@ void Swapchain::create(const System* system)
         0,
         surface,
         imageCount,
-        formats[0].format,
-        formats[0].colorSpace,
-        surfaceCapabilities.currentExtent,
+        chosenFormat.format,
+        chosenFormat.colorSpace,
+        extent,
         1,
         neededUsageFlags,
         (queueFamilyIndices.getSize() == 1) ? VkSharingMode::VK_SHARING_MODE_EXCLUSIVE : VkSharingMode::VK_SHARING_MODE_CONCURRENT,
@@ -94,7 +111,7 @@ void Swapchain::create(const System* system)
             0,
             images[ind],
             VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
-            formats[0].format,
+            chosenFormat.format,
             components,
             subresource
         };
@@ -102,11 +119,26 @@ void Swapchain::create(const System* system)
     }
 }
 
+const VkFormat& Swapchain::getFormat() const
+{
+    return format;
+}
+
+const VkExtent2D& Swapchain::getExtent() const
+{
+    return extent;
+}
+
 const uint32_t Swapchain::acquireNextImage(const VkSemaphore& signalSemaphore, const VkFence& signalFence) const
 {
     uint32_t index;
     checkResult(vkAcquireNextImageKHR(system->getDevice(), swapchain, ~0, signalSemaphore, signalFence, &index), "Failed to acquire image.\n");
     return index;
+}
+
+const uint32_t Swapchain::getImageCount() const
+{
+    return images.getSize();
 }
 
 const VkImageView& Swapchain::getView(const uint32_t index) const
