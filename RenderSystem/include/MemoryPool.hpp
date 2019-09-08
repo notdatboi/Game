@@ -9,8 +9,8 @@ public:
     void create(const System* system, const uint32_t memoryObjectCount);
     const VkDeviceMemory& operator[](const uint32_t index) const;
     VkDeviceMemory& operator[](const uint32_t index);
-    Array<uint32_t> allocate(const Array<VkMemoryRequirements>& group, const uint32_t memoryObjectIndex);   // returns offsets
-    void allocate(const VkMemoryRequirements& mem, const uint32_t memoryObjectIndex);
+    Array<uint32_t> allocate(const uint32_t memoryObjectIndex, const Array<VkMemoryRequirements>& group);   // returns offsets
+    void allocate(const uint32_t memoryObjectIndex, const VkMemoryRequirements& mem);
     void* map(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size);
     void flush(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size);
     void unmap(const uint32_t memoryObjectIndex);

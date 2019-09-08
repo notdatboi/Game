@@ -20,7 +20,7 @@ void BufferPool::destroyBuffer(const uint32_t index)
     }
 }
 
-void BufferPool::createBuffer(const VkDeviceSize size, const VkBufferUsageFlags usage, const uint32_t index)
+void BufferPool::createBuffer(const uint32_t index, const VkDeviceSize size, const VkBufferUsageFlags usage)
 {
     VkBufferCreateInfo bufferInfo = 
     {

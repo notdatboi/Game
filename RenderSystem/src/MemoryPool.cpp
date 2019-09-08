@@ -16,7 +16,7 @@ void MemoryPool::create(const System* system, const uint32_t memoryObjectCount)
     memory.create(memoryObjectCount);
 }
 
-Array<uint32_t> MemoryPool::allocate(const Array<VkMemoryRequirements>& group, const uint32_t memoryObjectIndex)
+Array<uint32_t> MemoryPool::allocate(const uint32_t memoryObjectIndex, const Array<VkMemoryRequirements>& group)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(system->getPhysicalDevice(), &memoryProperties);
@@ -55,7 +55,7 @@ Array<uint32_t> MemoryPool::allocate(const Array<VkMemoryRequirements>& group, c
     return offsets;
 }
 
-void MemoryPool::allocate(const VkMemoryRequirements& mem, const uint32_t memoryObjectIndex)
+void MemoryPool::allocate(const uint32_t memoryObjectIndex, const VkMemoryRequirements& mem)
 {
     uint32_t memoryTypeIndex;
     for(auto ind = 0; ind < sizeof(uint32_t); ++ind)

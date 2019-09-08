@@ -94,7 +94,7 @@ void ImagePool::create(const System* system, const uint32_t count)
     images.create(count);
 }
 
-void ImagePool::createImage(const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler, const uint32_t index)
+void ImagePool::createImage(const uint32_t index, const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler)
 {
     VkImageCreateInfo imageInfo = 
     {
