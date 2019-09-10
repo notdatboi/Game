@@ -66,7 +66,73 @@ void ImagePool::recordLayouChangeCommands(VkCommandBuffer& cmd, const VkImageLay
     vkCmdPipelineBarrier(cmd, srcStageFlags, dstStageFlags, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
+void ImagePool::recordMipmapGenCommands(VkCommandBuffer& cmd, const VkImageLayout oldLayout, const VkImageLayout newLayout, const VkImage& img, const VkExtent2D& imageExtent, const uint32_t mipmapLevelCount)
+{
+    if(mipmapLevelCount == 1) return;
+    VkImageSubresourceRange srcSubresource = 
+    {
+        VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,
+        0,
+        1,
+        0,
+        1
+    }, 
+    dstSubresource = 
+    {
+        VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT,
+        1,
+        1,
+        0,
+        1
+    };
+
+    if(oldLayout != VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+    {
+        recordLayouChangeCommands(cmd, oldLayout, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, srcSubresource);
+    }
+    VkExtent2D srcExtent = imageExtent;
+    for(auto i = 1; i < mipmapLevelCount; ++i)
+    {
+        srcSubresource.baseMipLevel = i - 1;
+        dstSubresource.baseMipLevel = i;
+        VkImageSubresourceLayers srcLayers = 
+        {
+            srcSubresource.aspectMask,
+            srcSubresource.baseMipLevel,
+            srcSubresource.baseArrayLayer,
+            srcSubresource.layerCount
+        }, 
+        dstLayers = 
+        {
+            dstSubresource.aspectMask,
+            dstSubresource.baseMipLevel,
+            dstSubresource.baseArrayLayer,
+            dstSubresource.layerCount
+        };
+        recordLayouChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, img, dstSubresource);
+        VkImageBlit blitInfo = 
+        {
+            srcLayers,
+            {{0, 0, 0}, {srcExtent.width, srcExtent.height, 1}},
+            dstLayers,
+            {{0, 0, 0}, {srcExtent.width / 2, srcExtent.height / 2, 1}},
+        };
+        vkCmdBlitImage(cmd, img, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blitInfo, VkFilter::VK_FILTER_LINEAR);
+        srcExtent.width /= 2;
+        srcExtent.height /= 2;
+        recordLayouChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, dstSubresource);
+    }
+    srcSubresource.baseMipLevel = 0;
+    srcSubresource.levelCount = mipmapLevelCount;
+    recordLayouChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, newLayout, img, srcSubresource);
+}
+
 const uint32_t ImagePool::getMipmapLevelCount(const VkExtent2D& imageExtent)
+{
+    return std::log2(std::min(imageExtent.width, imageExtent.height));
+}
+
+const uint32_t ImagePool::getMipmapLevelCount(const VkExtent3D& imageExtent)
 {
     return std::log2(std::min(imageExtent.width, imageExtent.height));
 }
@@ -94,7 +160,7 @@ void ImagePool::create(const System* system, const uint32_t count)
     images.create(count);
 }
 
-void ImagePool::createImage(const uint32_t index, const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler)
+void ImagePool::createImage(const uint32_t index, const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageTiling tiling, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler)
 {
     VkImageCreateInfo imageInfo = 
     {
@@ -107,7 +173,7 @@ void ImagePool::createImage(const uint32_t index, const VkFormat format, const V
         mipmapLevels,
         1,
         VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
-        VkImageTiling::VK_IMAGE_TILING_OPTIMAL,
+        tiling,
         usage,
         VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
         1,
@@ -193,14 +259,14 @@ void ImagePool::destroyImage(const uint32_t index)
     }
 }
 
-const VkMemoryRequirements ImagePool::getMemoryRequirements(const uint32_t index)
+const VkMemoryRequirements ImagePool::getMemoryRequirements(const uint32_t index) const
 {
     VkMemoryRequirements requirements;
     vkGetImageMemoryRequirements(system->getDevice(), images[index].image, &requirements);
     return requirements;
 }
 
-void ImagePool::bindMemory(const VkDeviceMemory& memory, const uint32_t offset, const uint32_t imageIndex)
+void ImagePool::bindMemory(const VkDeviceMemory& memory, const uint32_t offset, const uint32_t imageIndex) const
 {
     checkResult(vkBindImageMemory(system->getDevice(), images[imageIndex].image, memory, offset), "Failed to bind image memory.\n");
 }
