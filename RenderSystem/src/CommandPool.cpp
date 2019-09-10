@@ -34,6 +34,11 @@ void CommandPool::allocateCommandBuffers(const uint32_t first, const uint32_t co
     checkResult(vkAllocateCommandBuffers(system->getDevice(), &allocation, &commandBuffers[first]), "Allocation failed.\n");
 }
 
+void CommandPool::reset(const uint32_t index, const bool releaseResources) const
+{
+    vkResetCommandBuffer(commandBuffers[index], releaseResources ? VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : VkCommandBufferResetFlags());
+}
+
 const VkCommandBuffer& CommandPool::operator[](const uint32_t index) const
 {
     return commandBuffers[index];

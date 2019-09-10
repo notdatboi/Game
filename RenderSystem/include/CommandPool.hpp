@@ -9,6 +9,7 @@ public:
     const VkCommandPool& getPool() const;
     void create(const System* system, const uint32_t commandBufferCount, const bool dynamicPool = false);
     void allocateCommandBuffers(const uint32_t first, const uint32_t count, const VkCommandBufferLevel level);
+    void reset(const uint32_t index, const bool releaseResources = false) const;
     const VkCommandBuffer& operator[](const uint32_t index) const;
     VkCommandBuffer& operator[](const uint32_t index);
     void destroy();
