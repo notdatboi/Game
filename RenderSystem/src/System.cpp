@@ -16,6 +16,13 @@ void System::create(const Window& window, const bool enableDebug, const VkPhysic
     createDevice(enabledFeatures);
 }
 
+const VkSurfaceCapabilitiesKHR System::getSurfaceCapabilities() const
+{
+    VkSurfaceCapabilitiesKHR capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
+    return capabilities;
+}
+
 const VkPhysicalDevice& System::getPhysicalDevice() const
 {
     return physicalDevice;

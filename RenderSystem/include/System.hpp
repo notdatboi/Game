@@ -16,6 +16,7 @@ public:
     void create(const Window& window, const bool enableDebug, const VkPhysicalDeviceFeatures& enabledFeatures);
     const VkPhysicalDevice& getPhysicalDevice() const;
     const VkSurfaceKHR& getSurface() const;
+    const VkSurfaceCapabilitiesKHR getSurfaceCapabilities() const;
     const VkDevice& getDevice() const;
     const QueueInfo& getPresentQueue() const;
     const QueueInfo& getGraphicsQueue() const;
