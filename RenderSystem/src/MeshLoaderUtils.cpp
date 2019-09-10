@@ -20,3 +20,8 @@ void VBGeneratorOptimal::generateVertexBuffer(const aiMesh& mesh, void* dst, con
         memcpy(dstVertices + ind, &tmp, sizeof(Vertex));
     }
 }
+
+const uint32_t VBGeneratorOptimal::getVertexSize() const
+{
+    return sizeof(Vertex);
+}
