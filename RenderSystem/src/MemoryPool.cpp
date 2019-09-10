@@ -16,14 +16,14 @@ void MemoryPool::create(const System* system, const uint32_t memoryObjectCount)
     memory.create(memoryObjectCount);
 }
 
-Array<uint32_t> MemoryPool::allocate(const uint32_t memoryObjectIndex, const Array<VkMemoryRequirements>& group)
+Array<uint32_t> MemoryPool::allocate(const uint32_t memoryObjectIndex, const VkMemoryPropertyFlags property, const Array<VkMemoryRequirements>& group)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(system->getPhysicalDevice(), &memoryProperties);
     Array<uint32_t> offsets;
     offsets.create(group.getSize());
     offsets[0] = 0;
-    uint32_t alignment = group[0].alignment, memoryType = group[0].memoryTypeBits, size = group[0].size, memoryTypeIndex;
+    uint32_t alignment = group[0].alignment, memoryType = group[0].memoryTypeBits, size = group[0].size, memoryTypeIndex = (~0);
     for(auto ind = 1; ind < group.getSize(); ++ind)
     {
         memoryType &= group[ind].memoryTypeBits;
@@ -39,10 +39,14 @@ Array<uint32_t> MemoryPool::allocate(const uint32_t memoryObjectIndex, const Arr
     {
         if(((1 << ind) & memoryType) != 0)
         {
-            memoryTypeIndex = ind;
-            break;
+            if(memoryProperties.memoryTypes[ind].propertyFlags == property)
+            {
+                memoryTypeIndex = ind;
+                break;
+            }
         }
     }
+    if(memoryTypeIndex == (~0)) reportError("No way to allocate memory with this memory properties.\n");
     VkMemoryAllocateInfo memoryInfo;
     memoryInfo = 
     {
@@ -55,17 +59,23 @@ Array<uint32_t> MemoryPool::allocate(const uint32_t memoryObjectIndex, const Arr
     return offsets;
 }
 
-void MemoryPool::allocate(const uint32_t memoryObjectIndex, const VkMemoryRequirements& mem)
+void MemoryPool::allocate(const uint32_t memoryObjectIndex, const VkMemoryPropertyFlags property, const VkMemoryRequirements& mem)
 {
-    uint32_t memoryTypeIndex;
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(system->getPhysicalDevice(), &memoryProperties);
+    uint32_t memoryTypeIndex = (~0);
     for(auto ind = 0; ind < sizeof(uint32_t); ++ind)
     {
         if(((1 << ind) & mem.memoryTypeBits) != 0)
         {
-            memoryTypeIndex = ind;
-            break;
+            if(memoryProperties.memoryTypes[ind].propertyFlags == property)
+            {
+                memoryTypeIndex = ind;
+                break;
+            }
         }
     }
+    if(memoryTypeIndex == (~0)) reportError("No way to allocate memory with this memory properties.\n");
     VkMemoryAllocateInfo memoryInfo;
     memoryInfo = 
     {
