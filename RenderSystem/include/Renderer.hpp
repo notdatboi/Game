@@ -17,7 +17,7 @@ class Renderer
 {
 public:
     Renderer();
-    void createBase(const System* system, const CommandPool* commandPool, const SynchronizationPool* syncPool, const ImagePool* imagePool);
+    void createBase(const System* system, const CommandPool* commandPool, const SynchronizationPool* syncPool, const ImagePool* imagePool); // command pool must allow individual command buffer reset
     const uint32_t getSwapchainImageCount() const;
     void createRenderPass(Array<uint32_t>&& depthAttachmentIndices, const VkFormat depthAttachmentFormat, Array<uint32_t>&& commandBufferIndices, Array<RenderSyncPrimitives>&& semaphoreIndices, Array<RenderSyncPrimitives>&& fenceIndices);
     void beginRendering();

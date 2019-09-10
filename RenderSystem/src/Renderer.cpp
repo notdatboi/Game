@@ -88,6 +88,7 @@ void Renderer::beginRendering()
 {
     syncPool->waitForFences(fences[currentSubmission].renderFinished);
     syncPool->resetFences(fences[currentSubmission].renderFinished);
+    commandPool->reset(commandBuffers[currentImage]);
     currentImage = swapchain.acquireNextImage(syncPool->getSemaphore(semaphores[currentSubmission].imageAcquired), syncPool->getFence(fences[currentSubmission].imageAcquired));
 
     VkCommandBufferBeginInfo beginInfo = 
