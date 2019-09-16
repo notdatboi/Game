@@ -41,7 +41,7 @@ void MeshLoader::generateIndexBuffer(const aiMesh& mesh, void* dst) const
 
 void MeshLoader::generateVertexBuffer(const aiMesh& mesh, const VBGenerator* generator, void* dst, const uint32_t vertexCount, const uint32_t textureCoordIndex)
 {
-    generator->generateVertexBuffer(mesh, dst, vertexCount ? vertexCount : getVertexCount(mesh), textureCoordIndex);
+    generator->generateVertexBuffer(mesh, dst, vertexCount ? vertexCount : getVertexCount(mesh), (textureCoordIndex == (~0)) ? getFirstTextureCoordIndex(mesh) : textureCoordIndex);
 }
 
 const bool MeshLoader::hasPositions(const aiMesh& mesh) const
