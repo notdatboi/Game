@@ -1,4 +1,5 @@
 #include<MemoryPool.hpp>
+#include<numeric>
 
 void MemoryPool::align(uint32_t& size, const uint32_t alignment)
 {
@@ -6,6 +7,11 @@ void MemoryPool::align(uint32_t& size, const uint32_t alignment)
     {
         size = (size / alignment + 1) * alignment;
     }
+}
+
+void MemoryPool::align(uint32_t& alignment1, uint32_t& alignment2)
+{
+    alignment1 = alignment2 = std::lcm(alignment1, alignment2);
 }
 
 MemoryPool::MemoryPool(){}

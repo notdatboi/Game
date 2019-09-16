@@ -15,6 +15,7 @@ public:
     void flush(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size);
     void unmap(const uint32_t memoryObjectIndex);
     static void align(uint32_t& size, const uint32_t alignment);
+    static void align(uint32_t& alignment1, uint32_t& alignment2);
     void destroy();
     ~MemoryPool();
 private:
