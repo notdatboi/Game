@@ -9,6 +9,13 @@ struct ShaderStageInfo
     VkShaderModule module;
 };
 
+struct BufferInfo
+{
+    VkBuffer buffer;
+    VkDeviceSize offset;
+    VkDeviceSize size;
+};
+
 template<typename T>
 class Array
 {
