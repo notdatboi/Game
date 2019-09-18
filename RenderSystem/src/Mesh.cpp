@@ -1,27 +1,82 @@
 #include<Mesh.hpp>
 
-Mesh::Mesh(): model(1.0f)
+Mesh::Mesh()
 {
-}
-
-void Mesh::create(const uint32_t childrenCount)
-{
-    children.create(childrenCount);
-}
-
-void Mesh::setChild(const uint32_t index, Mesh* child)
-{
-    children[index] = child;
-}
-
-const glm::mat4& Mesh::getModelMatrix() const
-{
-    return model;
 }
 
 void Mesh::setMaterial(const Material* mat)
 {
     material = mat;
+}
+
+const uint32_t Mesh::getApproximateIndexCount() const
+{
+    return aimesh->mNumFaces * aimesh->mFaces->mNumIndices;
+}
+
+const uint32_t Mesh::getPreciseIndexCount() const
+{
+    uint32_t indexCount;
+    for(auto currentFaceId = 0; currentFaceId < aimesh->mNumFaces; ++currentFaceId)
+    {
+        const auto& face = *(aimesh->mFaces + currentFaceId);
+        indexCount += face.mNumIndices;
+    }
+    return indexCount;
+}
+
+const uint32_t Mesh::getVertexCount() const
+{
+    return aimesh->mNumVertices;
+}
+
+void Mesh::generateIndexBuffer(void* dst) const
+{
+    uint32_t* dstChar = (uint32_t*)dst;
+
+    size_t indexBufferIndex = 0;
+    for(auto currentFaceId = 0; currentFaceId < aimesh->mNumFaces; ++currentFaceId)
+    {
+        const auto& currentFace = *(aimesh->mFaces + currentFaceId);
+        for(auto faceIndexId = 0; faceIndexId < currentFace.mNumIndices; ++faceIndexId)
+        {
+            memcpy(dstChar + indexBufferIndex, currentFace.mIndices + faceIndexId, sizeof(uint32_t));
+            ++indexBufferIndex;
+        }
+    }
+}
+
+void Mesh::generateVertexBuffer(const VBGenerator* generator, void* dst, const uint32_t vertexCount, const uint32_t textureCoordIndex) const
+{
+    generator->generateVertexBuffer(*aimesh, dst, vertexCount ? vertexCount : getVertexCount(), (textureCoordIndex == (~0)) ? getFirstTextureCoordIndex() : textureCoordIndex);
+}
+
+const bool Mesh::hasPositions() const
+{
+    return aimesh->HasPositions();
+}
+
+const bool Mesh::hasNormals() const
+{
+    return aimesh->HasNormals();
+}
+
+const bool Mesh::hasTangentsAndBitangents() const
+{
+    return aimesh->HasTangentsAndBitangents();
+}
+
+const uint32_t Mesh::getFirstTextureCoordIndex() const
+{
+    for(auto index = 0; index < AI_MAX_NUMBER_OF_TEXTURECOORDS; ++index)
+    {
+        if(aimesh->HasTextureCoords(index))
+        {
+            return index;
+            break;
+        }
+    }
+    return ~0;
 }
 
 void Mesh::setVertexBuffer(BufferInfo&& info)
@@ -48,9 +103,7 @@ void Mesh::destroy()
 {
     vertexBuffer = BufferInfo();
     indexBuffer = BufferInfo();
-    model = glm::mat4(1.0f);
     material = nullptr;
-    children.clean();
 }
 
 Mesh::~Mesh()
