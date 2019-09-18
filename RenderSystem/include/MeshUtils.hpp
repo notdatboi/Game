@@ -1,5 +1,5 @@
-#ifndef MESH_LOADER_UTILS_HPP
-#define MESH_LOADER_UTILS_HPP
+#ifndef MESH_UTILS_HPP
+#define MESH_UTILS_HPP
 #include<assimp/scene.h>
 
 class VBGenerator

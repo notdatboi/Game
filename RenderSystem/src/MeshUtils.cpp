@@ -1,4 +1,4 @@
-#include<MeshLoaderUtils.hpp>
+#include<MeshUtils.hpp>
 #include<Utils.hpp>
 
 void VBGeneratorStandard::generateVertexBuffer(const aiMesh& mesh, void* dst, const uint32_t vertexCount, const uint32_t textureCoordIndex) const
