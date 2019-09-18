@@ -11,7 +11,7 @@ struct ShaderStageInfo
 
 struct BufferInfo
 {
-    VkBuffer buffer;
+    uint32_t bufferIndex;
     VkDeviceSize offset;
     VkDeviceSize size;
 };
