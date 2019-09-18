@@ -7,19 +7,24 @@
 #include<ImageLoader.hpp>
 #include<assimp/material.h>
 
-class MaterialLoader
+class Material
 {
 public:
-    MaterialLoader();
-    void create(const aiMaterial& mat, const std::string& modelPath = "");
+    Material();
+    void create(const aiMaterial* mat, const std::string& pathToTextures = "");
     const uint32_t getColorsSize() const;
     void writeColors(void* dst) const;
     const bool hasTexture() const;
     const bool hasNormalMap() const;
-    void writeTexture(ImageLoader* loader, ImagePool* dstPool, const uint32_t dstPoolIndex, void* dst);     // creates image, loads its data to dst
-    void writeNormalMap(ImageLoader* loader, ImagePool* dstPool, const uint32_t dstPoolIndex, void* dst);
+    void createTextureImage(ImagePool* dstPool, const uint32_t dstPoolIndex) const;
+    void createNormalMapImage(ImagePool* dstPool, const uint32_t dstPoolIndex) const;
+    void writeTexture(void* dst) const;
+    void writeNormalMap(void* dst) const;
+    void bindDescriptorSets(const Array<uint32_t>& indices);
+    void bindDescriptorSets(Array<uint32_t>&& indices);
+    const Array<uint32_t>& getDescriptorSetIndices() const;
     void destroy();
-    ~MaterialLoader();
+    ~Material();
 private:
     struct Colors
     {   
@@ -29,23 +34,11 @@ private:
     } colors;
     struct Images
     {
-        std::optional<std::string> textureFilename;
-        std::optional<std::string> normalMapFilename;
+        std::optional<ImageLoader::Image> texture;
+        std::optional<ImageLoader::Image> normalMap;
     } images;
 
-    void writeImage(const std::string& file, ImageLoader* loader, ImagePool* dstPool, const uint32_t dstPoolIndex, void* dst);
-};
-
-class Material
-{
-public:
-    Material();
-    void bindDescriptorSets(const Array<uint32_t>& indices);
-    void bindDescriptorSets(Array<uint32_t>&& indices);
-    const Array<uint32_t>& getDescriptorSetIndices() const;
-    void destroy();
-    ~Material();
-private:
+    void createImage(const ImageLoader::Image& img, ImagePool* dstPool, const uint32_t dstPoolIndex) const;
     Array<uint32_t> descriptorSetIndices;
 };
 
