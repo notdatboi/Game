@@ -4,105 +4,77 @@ Mesh::Mesh()
 {
 }
 
-void Mesh::setMaterial(const Material* mat)
+void Mesh::create(ObjectManagementStrategy* allocator, const aiMesh* mesh, const Material* mat)
 {
+    this->allocator = allocator;
+    allocator->allocateVertexBuffer(getVertexBufferSize(), vertexBuffer);
+    allocator->allocateIndexBuffer(getIndexBufferSize(), indexBuffer);
+    allocator->updateBuffer(tempVertexBuffer->getBufferPtr(), vertexBuffer);
+    allocator->updateBuffer(tempIndexBuffer.getPtr(), indexBuffer);
     material = mat;
+    generateIndexBuffer(mesh);
+    generateVertexBuffer(mesh);
 }
 
-const uint32_t Mesh::getApproximateIndexCount() const
+const uint32_t Mesh::getIndexBufferSize() const
 {
-    return aimesh->mNumFaces * aimesh->mFaces->mNumIndices;
+    return sizeof(uint32_t) * tempIndexBuffer.getSize();
 }
 
-const uint32_t Mesh::getPreciseIndexCount() const
+const uint32_t Mesh::getVertexBufferSize() const
 {
-    uint32_t indexCount;
-    for(auto currentFaceId = 0; currentFaceId < aimesh->mNumFaces; ++currentFaceId)
-    {
-        const auto& face = *(aimesh->mFaces + currentFaceId);
-        indexCount += face.mNumIndices;
-    }
-    return indexCount;
+    return tempVertexBuffer->getBufferSize();
 }
 
-const uint32_t Mesh::getVertexCount() const
+const Material* Mesh::getMaterial() const
 {
-    return aimesh->mNumVertices;
+    return material;
 }
 
-void Mesh::generateIndexBuffer(void* dst) const
+void Mesh::generateIndexBuffer(const aiMesh* mesh)
 {
-    uint32_t* dstChar = (uint32_t*)dst;
-
     size_t indexBufferIndex = 0;
-    for(auto currentFaceId = 0; currentFaceId < aimesh->mNumFaces; ++currentFaceId)
+    for(auto currentFaceId = 0; currentFaceId < mesh->mNumFaces; ++currentFaceId)
     {
-        const auto& currentFace = *(aimesh->mFaces + currentFaceId);
-        for(auto faceIndexId = 0; faceIndexId < currentFace.mNumIndices; ++faceIndexId)
+        const auto* currentFace = mesh->mFaces + currentFaceId;
+        for(auto faceIndexId = 0; faceIndexId < currentFace->mNumIndices; ++faceIndexId)
         {
-            memcpy(dstChar + indexBufferIndex, currentFace.mIndices + faceIndexId, sizeof(uint32_t));
+            tempIndexBuffer[indexBufferIndex] = *(currentFace->mIndices + faceIndexId);
             ++indexBufferIndex;
         }
     }
 }
 
-void Mesh::generateVertexBuffer(const VBGenerator* generator, void* dst, const uint32_t vertexCount, const uint32_t textureCoordIndex) const
+void Mesh::generateVertexBuffer(const aiMesh* mesh)
 {
-    generator->generateVertexBuffer(*aimesh, dst, vertexCount ? vertexCount : getVertexCount(), (textureCoordIndex == (~0)) ? getFirstTextureCoordIndex() : textureCoordIndex);
-}
-
-const bool Mesh::hasPositions() const
-{
-    return aimesh->HasPositions();
-}
-
-const bool Mesh::hasNormals() const
-{
-    return aimesh->HasNormals();
-}
-
-const bool Mesh::hasTangentsAndBitangents() const
-{
-    return aimesh->HasTangentsAndBitangents();
-}
-
-const uint32_t Mesh::getFirstTextureCoordIndex() const
-{
-    for(auto index = 0; index < AI_MAX_NUMBER_OF_TEXTURECOORDS; ++index)
+    switch(material->getType())
     {
-        if(aimesh->HasTextureCoords(index))
-        {
-            return index;
+        case DrawableType::NotTextured:
+            tempVertexBuffer = new VertexBufferNotTextured();
             break;
-        }
+        case DrawableType::Textured:
+            tempVertexBuffer = new VertexBufferStandard();
+            break;
+        case DrawableType::TexturedWithNormalMap:
+            tempVertexBuffer = new VertexBufferWithNormalMap();
+            break;
     }
-    return ~0;
+    if(!tempVertexBuffer->checkCompatibility(mesh)) reportError("Invalid mesh.\n");
+    tempVertexBuffer->loadFromAiMesh(mesh);
 }
 
-void Mesh::setVertexBuffer(BufferInfo&& info)
+void Mesh::clearExtraResources()
 {
-    vertexBuffer = info;
-}
-
-void Mesh::setVertexBuffer(const BufferInfo& info)
-{
-    vertexBuffer = info;
-}
-
-void Mesh::setIndexBuffer(BufferInfo&& info)
-{
-    indexBuffer = info;
-}
-
-void Mesh::setIndexBuffer(const BufferInfo& info)
-{
-    indexBuffer = info;
+    tempIndexBuffer.clear();
+    tempVertexBuffer->clear();
 }
 
 void Mesh::destroy()
 {
     vertexBuffer = BufferInfo();
     indexBuffer = BufferInfo();
+    tempVertexBuffer->clear();
+    tempIndexBuffer.clear();
     material = nullptr;
 }
 
