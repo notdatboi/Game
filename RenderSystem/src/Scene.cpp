@@ -40,7 +40,7 @@ const Array<Mesh*>& Scene::Node::getMeshes() const
 void Scene::Node::destroy()
 {
     modelMatrix = glm::mat4(1.0f);
-    meshes.clean();
+    meshes.clear();
     children.clear();
 }
 
@@ -52,6 +52,11 @@ Scene::Node::~Node()
 Scene::Scene()
 {
 
+}
+
+void Scene::setAllocator(ObjectManagementStrategy* allocator)
+{
+    this->allocator = allocator;
 }
 
 void Scene::loadNode(const aiNode* ainode, Node& node)
@@ -79,12 +84,6 @@ void Scene::loadFromFile(const std::string& imagePath, const std::string& file)
     loadNode(importedScene->mRootNode, root);
 }
 
-/*void Scene::create(const uint32_t maxMeshCount, const uint32_t maxMaterialCount)
-{
-    meshes.create(maxMeshCount);
-    materials.create(maxMaterialCount);
-}*/
-
 Material& Scene::getMaterial(const uint32_t index)
 {
     return materials[index];
@@ -109,16 +108,21 @@ void Scene::loadMaterials(const std::string& imagePath)
 {
     for(auto ind = 0; ind < importedScene->mNumMaterials; ++ind)
     {
-        materials[ind].create(*(importedScene->mMaterials + ind), imagePath);
+        materials[ind].create(allocator, *(importedScene->mMaterials + ind), imagePath);
     }
+}
+
+void Scene::clearExtraResources()
+{
+    for(auto ind = 0; ind < materials.getSize(); ++ind) materials[ind].clearExtraResources();
+    for(auto ind = 0; ind < meshes.getSize(); ++ind) meshes[ind].clearExtraResources();
 }
 
 void Scene::loadMeshes()
 {
     for(auto ind = 0; ind < importedScene->mNumMeshes; ++ind)
     {
-        meshes[ind].setAiMesh(*(importedScene->mMeshes + ind));
-        meshes[ind].setMaterial(&materials[(*(importedScene->mMeshes + ind))->mMaterialIndex]);
+        meshes[ind].create(allocator, *(importedScene->mMeshes + ind), &materials[(*(importedScene->mMeshes + ind))->mMaterialIndex]);
     }
 }
 
@@ -126,8 +130,8 @@ void Scene::destroy()
 {
     importer.FreeScene();
     root.destroy();
-    materials.clean();
-    meshes.clean();
+    materials.clear();
+    meshes.clear();
 }
 
 Scene::~Scene()

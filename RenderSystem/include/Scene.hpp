@@ -30,15 +30,18 @@ public:
         std::map<std::string, Node> children;
     };
     Scene();
+    void setAllocator(ObjectManagementStrategy* allocator);
     void loadFromFile(const std::string& imagePath, const std::string& file);
     //void create(const uint32_t maxMeshCount, const uint32_t maxMaterialCount);
     Material& getMaterial(const uint32_t index);
     Mesh& getMesh(const uint32_t index);
     Node& operator[](const std::string& key);
     const Node& operator[](const std::string& key) const;
+    void clearExtraResources();
     void destroy();
     ~Scene();
 private:
+    ObjectManagementStrategy* allocator;
     void loadNode(const aiNode* ainode, Node& node);
     void loadMeshes();
     void loadMaterials(const std::string& imagePath);
