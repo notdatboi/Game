@@ -1,28 +1,25 @@
 #ifndef MATERIAL_HPP
 #define MATERIAL_HPP
+#include<Constants.hpp>
 #include<optional>
 #include<string>
 #include<Utils.hpp>
-#include<ImagePool.hpp>
+#include<ImageHolder.hpp>
 #include<ImageLoader.hpp>
 #include<assimp/material.h>
+#include<ObjectManagementStrategy.hpp>
 
 class Material
 {
 public:
+    enum Descriptors{Colors, Texture, NormalMap};
     Material();
-    void create(const aiMaterial* mat, const std::string& pathToTextures = "");
-    const uint32_t getColorsSize() const;
-    void writeColors(void* dst) const;
-    const bool hasTexture() const;
-    const bool hasNormalMap() const;
-    void createTextureImage(ImagePool* dstPool, const uint32_t dstPoolIndex) const;
-    void createNormalMapImage(ImagePool* dstPool, const uint32_t dstPoolIndex) const;
-    void writeTexture(void* dst) const;
-    void writeNormalMap(void* dst) const;
-    void bindDescriptorSets(const Array<uint32_t>& indices);
-    void bindDescriptorSets(Array<uint32_t>&& indices);
-    const Array<uint32_t>& getDescriptorSetIndices() const;
+    void create(ObjectManagementStrategy* allocator, const aiMaterial* mat, const std::string& pathToTextures = "");
+    const DrawableType getType() const;
+    const ImageLoader::Image& getTextureImage() const;
+    const ImageLoader::Image& getNormalMapImage() const;
+    const Array<DescriptorInfo>& getDescriptorInfos() const;
+    void clearExtraResources();
     void destroy();
     ~Material();
 private:
@@ -32,14 +29,21 @@ private:
         float diffuseColor[4];
         float specularColor[4];
     } colors;
-    struct Images
+    struct TempImages
     {
         std::optional<ImageLoader::Image> texture;
         std::optional<ImageLoader::Image> normalMap;
-    } images;
+    } tempImages;
 
-    void createImage(const ImageLoader::Image& img, ImagePool* dstPool, const uint32_t dstPoolIndex) const;
-    Array<uint32_t> descriptorSetIndices;
+    const bool hasTexture() const;
+    const bool hasNormalMap() const;
+
+    ObjectManagementStrategy* allocator;
+    DrawableType type;
+    Array<DescriptorInfo> descriptorInfos;
+    BufferInfo colorsBuffer;
+    SampledImageInfo texture;
+    SampledImageInfo normalMap;
 };
 
 #endif

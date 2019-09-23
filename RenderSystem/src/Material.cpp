@@ -1,7 +1,8 @@
 #include<Material.hpp>
 
-void Material::create(const aiMaterial* mat, const std::string& pathToTextures)
+void Material::create(ObjectManagementStrategy* allocator, const aiMaterial* mat, const std::string& pathToTextures)
 {
+    this->allocator = allocator;
     aiColor3D amb, diff, spec;
     aiString texturePath, normalMapPath;
     if(mat->Get(AI_MATKEY_COLOR_AMBIENT, amb) != AI_SUCCESS) reportError("Invalid material.\n");
@@ -9,91 +10,73 @@ void Material::create(const aiMaterial* mat, const std::string& pathToTextures)
     if(mat->Get(AI_MATKEY_COLOR_SPECULAR, spec) != AI_SUCCESS) reportError("Invalid material.\n");
     if(mat->GetTexture(aiTextureType::aiTextureType_AMBIENT, 0, &texturePath) || mat->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &texturePath) || mat->GetTexture(aiTextureType::aiTextureType_SPECULAR, 0, &texturePath))
     {
-        images.texture.value().load((pathToTextures + texturePath.C_Str()).c_str(), 4);
+        tempImages.texture.value().load((pathToTextures + texturePath.C_Str()).c_str(), 4);
     }
     if(mat->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &normalMapPath))
     {
-        images.normalMap.value().load((pathToTextures + normalMapPath.C_Str()).c_str(), 4);
+        tempImages.normalMap.value().load((pathToTextures + normalMapPath.C_Str()).c_str(), 4);
     }
+    allocator->allocateUniformBuffer(sizeof(colors), VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT, colorsBuffer, descriptorInfos[Descriptors::Colors]);
+    allocator->updateBuffer(&colors, colorsBuffer);
+    if(hasTexture())
+    {
+        VkExtent3D extent = {tempImages.texture->getExtent().width, tempImages.texture->getExtent().height, 1};
+        allocator->allocateSampledImage(extent, texture, descriptorInfos[Descriptors::Texture]);
+        allocator->updateImage(*(tempImages.texture), texture.image);
+        if(hasNormalMap())
+        {
+            VkExtent3D extent = {tempImages.normalMap->getExtent().width, tempImages.normalMap->getExtent().height, 1};
+            allocator->allocateSampledImage(extent, normalMap, descriptorInfos[Descriptors::NormalMap]);
+            allocator->updateImage(*(tempImages.normalMap), normalMap.image);
+            type = DrawableType::TexturedWithNormalMap;
+        }
+        else type = DrawableType::Textured;
+    }
+    else type = DrawableType::NotTextured;
 }
 
-const uint32_t Material::getColorsSize() const
+const DrawableType Material::getType() const
 {
-    return sizeof(Colors);
-}
-
-void Material::writeColors(void* dst) const
-{
-    memcpy(dst, &colors, sizeof(colors));
+    return type;
 }
 
 const bool Material::hasTexture() const
 {
-    return images.texture.has_value();
+    return tempImages.texture.has_value();
 }
 
 const bool Material::hasNormalMap() const
 {
-    return images.normalMap.has_value();
+    return tempImages.normalMap.has_value();
 }
 
-void Material::createTextureImage(ImagePool* dstPool, const uint32_t dstPoolIndex) const
+const ImageLoader::Image& Material::getTextureImage() const
 {
-    if(!images.texture.has_value()) reportError("No texture provided.\n");
-    createImage(images.texture.value(), dstPool, dstPoolIndex);
+    return *tempImages.texture;
 }
 
-void Material::createNormalMapImage(ImagePool* dstPool, const uint32_t dstPoolIndex) const
+const ImageLoader::Image& Material::getNormalMapImage() const
 {
-    if(!images.normalMap.has_value()) reportError("No normal map provided.\n");
-    createImage(images.normalMap.value(), dstPool, dstPoolIndex);
+    return *tempImages.normalMap;
 }
 
-void Material::writeTexture(void* dst) const
+void Material::clearExtraResources()
 {
-    VkExtent2D extent = std::move(images.texture.value().getExtent());
-    uint32_t channels = images.texture.value().getChannelCount();
-    memcpy(dst, images.texture.value().getData(), extent.width * extent.height * channels);
-}
-
-void Material::writeNormalMap(void* dst) const
-{
-    VkExtent2D extent = std::move(images.normalMap.value().getExtent());
-    uint32_t channels = images.normalMap.value().getChannelCount();
-    memcpy(dst, images.normalMap.value().getData(), extent.width * extent.height * channels);
-}
-
-/*void Material::writeTexture(ImageLoader* loader, ImagePool* dstPool, const uint32_t dstPoolIndex, void* dst)
-{
-    if(!images.textureFilename.has_value()) reportError("No texture provided.\n");
-    writeImage(images.textureFilename.value(), loader, dstPool, dstPoolIndex, dst);
-}
-
-void Material::writeNormalMap(ImageLoader* loader, ImagePool* dstPool, const uint32_t dstPoolIndex, void* dst)
-{
-    if(!images.normalMapFilename.has_value()) reportError("No normal map provided.\n");
-    writeImage(images.normalMapFilename.value(), loader, dstPool, dstPoolIndex, dst);
-}*/
-
-void Material::createImage(const ImageLoader::Image& img, ImagePool* dstPool, const uint32_t dstPoolIndex) const
-{
-    VkExtent3D extent = {img.getExtent().width , img.getExtent().height, 1};
-    VkFormat format = VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
-    VkImageTiling tiling = VkImageTiling::VK_IMAGE_TILING_OPTIMAL;
-    VkFormatFeatureFlags features = VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_BLIT_DST_BIT | VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_BLIT_SRC_BIT | VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
-    if(!dstPool->checkFormatSupport(format, features))
+    if(tempImages.texture.has_value())
     {
-        tiling = VkImageTiling::VK_IMAGE_TILING_LINEAR;
-        if(!dstPool->checkFormatSupport(format, features, tiling)) reportError("Image format is not supported.\n");
+        tempImages.texture.value().unload();
     }
-    dstPool->createImage(dstPoolIndex, format, extent, ImagePool::getMipmapLevelCount(extent), tiling, VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, true, true);
+    if(tempImages.normalMap.has_value())
+    {
+        tempImages.normalMap.value().unload();
+    }
 }
 
 void Material::destroy()
 {
-    descriptorSetIndices.clean();
-    images.normalMap.reset();
-    images.texture.reset();
+    descriptorInfos.clear();
+    tempImages.normalMap.reset();
+    tempImages.texture.reset();
 }
 
 Material::~Material()
@@ -101,17 +84,7 @@ Material::~Material()
     destroy();
 }
 
-void Material::bindDescriptorSets(const Array<uint32_t>& indices)
+const Array<DescriptorInfo>& Material::getDescriptorInfos() const
 {
-    descriptorSetIndices = indices;
-}
-
-void Material::bindDescriptorSets(Array<uint32_t>&& indices)
-{
-    descriptorSetIndices = indices;
-}
-
-const Array<uint32_t>& Material::getDescriptorSetIndices() const
-{
-    return descriptorSetIndices;
+    return descriptorInfos;
 }
