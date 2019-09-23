@@ -14,6 +14,11 @@ void MemoryPool::align(uint32_t& alignment1, uint32_t& alignment2)
     alignment1 = alignment2 = std::lcm(alignment1, alignment2);
 }
 
+const uint32_t MemoryPool::align(const uint32_t alignment1, const uint32_t alignment2)
+{
+    return std::lcm(alignment1, alignment2);
+}
+
 MemoryPool::MemoryPool(){}
 
 void MemoryPool::create(const System* system, const uint32_t memoryObjectCount)
