@@ -246,7 +246,7 @@ void PipelinePool::destroy()
             pipelines[ind] = 0;
         }
     }
-    pipelines.clean();
+    pipelines.clear();
 }
 
 PipelinePool::~PipelinePool()

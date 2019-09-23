@@ -74,8 +74,8 @@ void DescriptorLayoutHolder::destroy()
             setLayouts[ind] = 0;
         }
     }
-    pipelineLayouts.clean();
-    setLayouts.clean();
+    pipelineLayouts.clear();
+    setLayouts.clear();
 }
 
 DescriptorLayoutHolder::~DescriptorLayoutHolder()

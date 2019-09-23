@@ -60,7 +60,7 @@ const VkMemoryRequirements BufferHolder::getMemoryRequirements(const uint32_t in
 
 void BufferHolder::bindMemory(const VkDeviceMemory& memory, const uint32_t offset, const uint32_t bufferIndex)
 {
-    vkBindBufferMemory(system->getDevice(), buffers[bufferIndex], memory, offset);
+    checkResult(vkBindBufferMemory(system->getDevice(), buffers[bufferIndex], memory, offset), "Failed to bind buffer memory");
 }
 
 const VkBuffer& BufferHolder::operator[](const uint32_t index) const
