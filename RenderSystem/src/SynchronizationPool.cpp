@@ -2,14 +2,12 @@
 
 SynchronizationPool::SynchronizationPool(){}
 
-void SynchronizationPool::create(const System* system, const uint32_t fenceCount, const uint32_t semaphoreCount)
+void SynchronizationPool::create(const System* system)
 {
     this->system = system;
-    semaphores.create(semaphoreCount);
-    fences.create(fenceCount);
 }
 
-void SynchronizationPool::createFence(const uint32_t index, const bool signaled)
+void SynchronizationPool::addFences(const uint32_t count, const bool signaled)
 {
     VkFenceCreateInfo info = 
     {
@@ -17,10 +15,20 @@ void SynchronizationPool::createFence(const uint32_t index, const bool signaled)
         nullptr,
         signaled ? VkFenceCreateFlagBits::VK_FENCE_CREATE_SIGNALED_BIT : 0
     };
-    checkResult(vkCreateFence(system->getDevice(), &info, nullptr, &fences[index]), "Failed to create fence.\n");
+    auto first = getFenceCount();
+    fences.insert(fences.end(), count, VkFence());
+    for(auto ind = first; ind < count; ++ind)
+    {
+        checkResult(vkCreateFence(system->getDevice(), &info, nullptr, &fences[ind]), "Failed to create fence.\n");
+    }
 }
 
-void SynchronizationPool::createSemaphore(const uint32_t index)
+const size_t SynchronizationPool::getFenceCount() const
+{
+    return fences.size();
+}
+
+void SynchronizationPool::addSemaphores(const uint32_t count)
 {
     VkSemaphoreCreateInfo info = 
     {
@@ -28,7 +36,17 @@ void SynchronizationPool::createSemaphore(const uint32_t index)
         nullptr,
         0
     };
-    checkResult(vkCreateSemaphore(system->getDevice(), &info, nullptr, &semaphores[index]), "Failed to create semaphore.\n");
+    auto first = getSemaphoreCount();
+    semaphores.insert(semaphores.end(), count, VkSemaphore());
+    for(auto ind = first; ind < semaphores.size(); ++ind)
+    {
+        checkResult(vkCreateSemaphore(system->getDevice(), &info, nullptr, &semaphores[ind]), "Failed to create semaphore.\n");
+    }
+}
+
+const size_t SynchronizationPool::getSemaphoreCount() const
+{
+    return semaphores.size();
 }
 
 const VkFence& SynchronizationPool::getFence(const uint32_t index) const
@@ -53,7 +71,7 @@ void SynchronizationPool::resetFences(const uint32_t first, const uint32_t count
 
 void SynchronizationPool::destroy()
 {
-    for(auto ind = 0; ind < fences.getSize(); ++ind)
+    for(auto ind = 0; ind < fences.size(); ++ind)
     {
         if(fences[ind])
         {
@@ -61,7 +79,7 @@ void SynchronizationPool::destroy()
             fences[ind] = 0;
         }
     }
-    for(auto ind = 0; ind < semaphores.getSize(); ++ind)
+    for(auto ind = 0; ind < semaphores.size(); ++ind)
     {
         if(semaphores[ind])
         {
@@ -69,8 +87,8 @@ void SynchronizationPool::destroy()
             semaphores[ind] = 0;
         }
     }
-    fences.clean();
-    semaphores.clean();
+    fences.clear();
+    semaphores.clear();
 }
 
 SynchronizationPool::~SynchronizationPool()
