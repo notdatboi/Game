@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 #include<initializer_list>
+#include<vector>
 #include<vulkan/vulkan.h>
 
 struct ShaderStageInfo
@@ -11,9 +12,29 @@ struct ShaderStageInfo
 
 struct BufferInfo
 {
-    uint32_t bufferIndex;
+    const VkBuffer* buffer;
     VkDeviceSize offset;
     VkDeviceSize size;
+};
+
+struct ImageInfo
+{
+    const VkImage* image;
+    const VkImageView* view;
+    VkImageLayout layout;
+};
+
+struct SampledImageInfo
+{
+    ImageInfo image;
+    const VkSampler* sampler;
+};
+
+struct DescriptorInfo
+{
+    const VkDescriptorSet* set;
+    uint32_t binding;
+    uint32_t arrayElement;
 };
 
 template<typename T>
@@ -32,6 +53,17 @@ public:
             ++listIterator;
         }
     }
+
+    Array(const std::vector<T>& vec)
+    {
+        create(vec.size());
+        auto vecIterator = vec.begin();
+        for(unsigned int ind = 0; ind < size; ++ind)
+        {
+            (*this)[ind] = *vecIterator;
+            ++vecIterator;
+        }
+    }
     
     Array(const unsigned int size)
     {
@@ -45,7 +77,7 @@ public:
 
     Array(Array&& other)
     {
-        clean();
+        clear();
         array = other.array;
         size = other.size;
         other.array = nullptr;
@@ -63,7 +95,7 @@ public:
 
     void create(const unsigned int size = 0)
     {
-        clean();
+        clear();
         array = new T[size];
         this->size = size;
     }
@@ -89,7 +121,7 @@ public:
 
     Array& operator=(const Array& other)
     {
-        clean();
+        clear();
         create(other.size);
         for(unsigned int ind = 0; ind < size; ++ind)
         {
@@ -100,7 +132,7 @@ public:
 
     Array& operator=(Array&& other)
     {
-        clean();
+        clear();
         array = other.array;
         size = other.size;
         other.array = nullptr;
@@ -110,7 +142,7 @@ public:
 
     Array& operator=(const std::initializer_list<T>& lst)
     {
-        clean();
+        clear();
         create(lst.size());
         auto listIterator = std::begin(lst);
         for(unsigned int ind = 0; ind < size; ++ind)
@@ -140,7 +172,7 @@ public:
         return array;
     }
 
-    void clean()
+    void clear()
     {
         if(array)
         {
@@ -151,7 +183,7 @@ public:
 
     ~Array()
     {
-        clean();
+        clear();
     }
 private:
     T* array;
