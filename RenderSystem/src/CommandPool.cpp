@@ -7,10 +7,9 @@ const VkCommandPool& CommandPool::getPool() const
     return pool;
 }
 
-void CommandPool::create(const System* system, const uint32_t commandBufferCount, const bool dynamicPool = false)
+void CommandPool::create(const System* system, const bool dynamicPool = false)
 {
     this->system = system;
-    commandBuffers.create(commandBufferCount);
     VkCommandPoolCreateInfo poolInfo = 
     {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -32,6 +31,16 @@ void CommandPool::allocateCommandBuffers(const uint32_t first, const uint32_t co
         count
     };
     checkResult(vkAllocateCommandBuffers(system->getDevice(), &allocation, &commandBuffers[first]), "Allocation failed.\n");
+}
+
+void CommandPool::addCommandBuffers(uint32_t count)
+{
+    commandBuffers.insert(commandBuffers.end(), count, VkCommandBuffer());
+}
+
+const size_t CommandPool::getCurrentPoolSize() const
+{
+    return commandBuffers.size();
 }
 
 void CommandPool::reset(const uint32_t index, const bool releaseResources) const
@@ -56,7 +65,7 @@ void CommandPool::destroy()
         vkDestroyCommandPool(system->getDevice(), pool, nullptr);
         pool = 0;
     }
-    commandBuffers.clean();
+    commandBuffers.clear();
 }
 
 CommandPool::~CommandPool()
