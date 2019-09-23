@@ -1,8 +1,9 @@
-#include<ImagePool.hpp>
+#include<ImageHolder.hpp>
 #include<cmath>
 
-void ImagePool::recordLayouChangeCommands(VkCommandBuffer& cmd, const VkImageLayout oldLayout, const VkImageLayout newLayout, const VkImage& img, const VkImageSubresourceRange& subresource)
+void ImageHolder::recordLayouChangeCommands(const VkCommandBuffer& cmd, const VkImageLayout oldLayout, const VkImageLayout newLayout, const VkImage& img, const VkImageSubresourceRange& subresource)
 {
+    if(oldLayout == newLayout) return;
     VkAccessFlags srcAccessFlags, dstAccessFlags;
     VkPipelineStageFlags srcStageFlags, dstStageFlags;
     if(oldLayout == VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED)
@@ -66,7 +67,7 @@ void ImagePool::recordLayouChangeCommands(VkCommandBuffer& cmd, const VkImageLay
     vkCmdPipelineBarrier(cmd, srcStageFlags, dstStageFlags, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 }
 
-void ImagePool::recordMipmapGenCommands(VkCommandBuffer& cmd, const VkImageLayout oldLayout, const VkImageLayout newLayout, const VkImage& img, const VkExtent2D& imageExtent, const uint32_t mipmapLevelCount)
+void ImageHolder::recordMipmapGenCommands(const VkCommandBuffer& cmd, const VkImageLayout oldLayout, const VkImageLayout newLayout, const VkImage& img, const VkExtent2D& imageExtent, const uint32_t mipmapLevelCount, const VkImageLayout mipmapImageLayout)
 {
     if(mipmapLevelCount == 1) return;
     VkImageSubresourceRange srcSubresource = 
@@ -109,7 +110,7 @@ void ImagePool::recordMipmapGenCommands(VkCommandBuffer& cmd, const VkImageLayou
             dstSubresource.baseArrayLayer,
             dstSubresource.layerCount
         };
-        recordLayouChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, img, dstSubresource);
+        recordLayouChangeCommands(cmd, mipmapImageLayout, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, img, dstSubresource);
         VkImageBlit blitInfo = 
         {
             srcLayers,
@@ -127,17 +128,17 @@ void ImagePool::recordMipmapGenCommands(VkCommandBuffer& cmd, const VkImageLayou
     recordLayouChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, newLayout, img, srcSubresource);
 }
 
-const uint32_t ImagePool::getMipmapLevelCount(const VkExtent2D& imageExtent)
+const uint32_t ImageHolder::getMipmapLevelCount(const VkExtent2D& imageExtent)
 {
     return std::log2(std::min(imageExtent.width, imageExtent.height));
 }
 
-const uint32_t ImagePool::getMipmapLevelCount(const VkExtent3D& imageExtent)
+const uint32_t ImageHolder::getMipmapLevelCount(const VkExtent3D& imageExtent)
 {
     return std::log2(std::min(imageExtent.width, imageExtent.height));
 }
 
-bool ImagePool::checkFormatSupport(const VkFormat format, const VkFormatFeatureFlags features, const VkImageTiling tiling) const
+bool ImageHolder::checkFormatSupport(const VkFormat format, const VkFormatFeatureFlags features, const VkImageTiling tiling) const
 {
     VkFormatProperties properties;
     vkGetPhysicalDeviceFormatProperties(system->getPhysicalDevice(), format, &properties);
@@ -152,15 +153,24 @@ bool ImagePool::checkFormatSupport(const VkFormat format, const VkFormatFeatureF
     return false;
 }
 
-ImagePool::ImagePool(){}
+ImageHolder::ImageHolder(){}
 
-void ImagePool::create(const System* system, const uint32_t count)
+void ImageHolder::create(const System* system)
 {
     this->system = system;
-    images.create(count);
 }
 
-void ImagePool::createImage(const uint32_t index, const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageTiling tiling, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler)
+const size_t ImageHolder::getCurrentImageCount() const
+{
+    return images.size();
+}
+
+void ImageHolder::addImages(const uint32_t count)
+{
+    images.insert(images.end(), count, ImageData());
+}
+
+void ImageHolder::initImage(const uint32_t index, const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageTiling tiling, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler)
 {
     VkImageCreateInfo imageInfo = 
     {
@@ -240,7 +250,13 @@ void ImagePool::createImage(const uint32_t index, const VkFormat format, const V
     }
 }
 
-void ImagePool::destroyImage(const uint32_t index)
+void ImageHolder::addAndInitImage(const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageTiling tiling, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler)
+{
+    addImages(1);
+    initImage(getCurrentImageCount() - 1, format, extent, mipmapLevels, tiling, usage, aspect, createView, createSampler);
+}
+
+void ImageHolder::destroyImage(const uint32_t index)
 {
     if(images[index].view)
     {
@@ -259,38 +275,38 @@ void ImagePool::destroyImage(const uint32_t index)
     }
 }
 
-const VkMemoryRequirements ImagePool::getMemoryRequirements(const uint32_t index) const
+const VkMemoryRequirements ImageHolder::getMemoryRequirements(const uint32_t index) const
 {
     VkMemoryRequirements requirements;
     vkGetImageMemoryRequirements(system->getDevice(), images[index].image, &requirements);
     return requirements;
 }
 
-void ImagePool::bindMemory(const VkDeviceMemory& memory, const uint32_t offset, const uint32_t imageIndex) const
+void ImageHolder::bindMemory(const VkDeviceMemory& memory, const uint32_t offset, const uint32_t imageIndex) const
 {
     checkResult(vkBindImageMemory(system->getDevice(), images[imageIndex].image, memory, offset), "Failed to bind image memory.\n");
 }
 
-const ImageInfo& ImagePool::operator[](const uint32_t index) const
+const ImageHolder::ImageData& ImageHolder::operator[](const uint32_t index) const
 {
     return images[index];
 }
 
-ImageInfo& ImagePool::operator[](const uint32_t index)
+ImageHolder::ImageData& ImageHolder::operator[](const uint32_t index)
 {
     return images[index];
 }
 
-void ImagePool::destroy()
+void ImageHolder::destroy()
 {
-    for(auto index = 0; index < images.getSize(); ++index)
+    for(auto index = 0; index < images.size(); ++index)
     {
         destroyImage(index);
     }
-    images.clean();
+    images.clear();
 }
 
-ImagePool::~ImagePool()
+ImageHolder::~ImageHolder()
 {
     destroy();
 }
