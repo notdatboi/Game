@@ -20,4 +20,12 @@ private:
     Array<VkDescriptorSet> sets;
 };
 
+struct DescriptorInfo
+{
+    const DescriptorPool* pool;
+    uint32_t setIndex;
+    uint32_t binding;
+    uint32_t arrayElement;
+};
+
 #endif

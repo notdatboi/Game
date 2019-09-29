@@ -24,4 +24,12 @@ private:
     std::vector<VkBuffer> buffers;
 };
 
+struct BufferInfo
+{
+    uint32_t index;
+    const BufferHolder* holder;
+    VkDeviceSize offset;
+    VkDeviceSize size;
+};
+
 #endif

@@ -10,40 +10,13 @@ struct ShaderStageInfo
     VkShaderModule module;
 };
 
-struct BufferInfo
-{
-    const VkBuffer* buffer;
-    VkDeviceSize offset;
-    VkDeviceSize size;
-};
-
-struct ImageInfo
-{
-    const VkImage* image;
-    const VkImageView* view;
-    VkImageLayout layout;
-};
-
-struct SampledImageInfo
-{
-    ImageInfo image;
-    const VkSampler* sampler;
-};
-
-struct DescriptorInfo
-{
-    const VkDescriptorSet* set;
-    uint32_t binding;
-    uint32_t arrayElement;
-};
-
 template<typename T>
 class Array
 {
 public:
     Array(): array(nullptr), size(0) {}
     
-    Array(const std::initializer_list<T>& lst)
+    Array(const std::initializer_list<T>& lst): array(nullptr), size(0) 
     {
         create(lst.size());
         auto listIterator = std::begin(lst);
@@ -54,7 +27,7 @@ public:
         }
     }
 
-    Array(const std::vector<T>& vec)
+    Array(const std::vector<T>& vec): array(nullptr), size(0) 
     {
         create(vec.size());
         auto vecIterator = vec.begin();
@@ -65,17 +38,17 @@ public:
         }
     }
     
-    Array(const unsigned int size)
+    Array(const unsigned int size): array(nullptr), size(0) 
     {
         create(size);
     }
 
-    Array(const Array& other)
+    Array(const Array& other): array(nullptr), size(0) 
     {
         *this = other;
     }
 
-    Array(Array&& other)
+    Array(Array&& other): array(nullptr), size(0) 
     {
         clear();
         array = other.array;
@@ -150,6 +123,7 @@ public:
             (*this)[ind] = *listIterator;
             ++listIterator;
         }
+        return *this;
     }
 
     const bool empty() const
@@ -174,7 +148,7 @@ public:
 
     void clear()
     {
-        if(array)
+        if(size != 0)
         {
             delete[] array;
             size = 0;
@@ -191,6 +165,8 @@ private:
 };
 
 void reportError(const char* error);
+
+void printLog(const char* log);
 
 void checkResult(const VkResult& result, const char* error);
 
