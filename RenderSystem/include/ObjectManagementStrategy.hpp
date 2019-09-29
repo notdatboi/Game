@@ -18,6 +18,8 @@ public:
     virtual void create(const System* system, 
         SynchronizationPool* syncPool, 
         CommandPool* commandPool) = 0;  // must be dynamic
+    virtual void pickDepthStencilFormat(VkFormat& format, VkImageTiling& tiling) const = 0;
+    virtual void pickImageFormat(VkFormat& format, VkImageTiling& tiling) const = 0;
     virtual void allocateSampledImage(const VkExtent3D& extent, SampledImageInfo& sampledImage, DescriptorInfo& sampledImageDescriptor) = 0;
     virtual void allocateDepthMap(const VkExtent2D& extent, ImageInfo& depthMap) = 0;
     virtual void allocateVertexBuffer(const uint32_t size, BufferInfo& buffer) = 0;
@@ -38,6 +40,8 @@ public:
     void create(const System* system, 
         SynchronizationPool* syncPool, 
         CommandPool* commandPool);  // must be dynamic
+    void pickDepthStencilFormat(VkFormat& format, VkImageTiling& tiling) const;
+    void pickImageFormat(VkFormat& format, VkImageTiling& tiling) const;
     void allocateSampledImage(const VkExtent3D& extent, SampledImageInfo& sampledImage, DescriptorInfo& sampledImageDescriptor);
     void allocateDepthMap(const VkExtent2D& extent, ImageInfo& depthMap);
     void allocateVertexBuffer(const uint32_t size, BufferInfo& buffer);
@@ -53,13 +57,13 @@ public:
 private:
     enum DescriptorLayouts
     {
-        SampledImageFrag,
-        UniformFrag,
-        UniformVertTeseGeom,
-        Count
+        DLSampledImageFrag,
+        DLUniformFrag,
+        DLUniformVertTeseGeom,
+        DLCount
     };
-    enum MemoryObjects{Transfer, Image, Buffer, Count};
-    enum Buffers{Vertex, Index, Transfer, Uniform, Count};
+    enum MemoryObjects{MOTransfer, MOImage, MOBuffer, MOCount};
+    enum Buffers{BVertex, BIndex, BTransfer, BUniform, BCount};
 
     struct BufferDescriptorUpdateCommand
     {
@@ -67,6 +71,23 @@ private:
         uint32_t set;
         uint32_t binding;
         uint32_t arrayElement;
+    };
+
+    struct ImageDescriptorUpdateCommand
+    {
+        const SampledImageInfo* image;
+        VkImageLayout layout;
+        uint32_t set;
+        uint32_t binding;
+        uint32_t arrayElement;
+        uint32_t descriptorCount;
+    };
+
+    struct InitialImageLayoutUpdateCommand
+    {
+        ImageInfo* image;
+        VkImageLayout newLayout;
+        VkImageSubresourceRange subresource;
     };
 
     struct BufferUpdateCommand
@@ -81,13 +102,21 @@ private:
         const ImageInfo* dst;
     };
 
+    struct ViewCreateCommand
+    {
+        uint32_t index;
+        uint32_t imageIndex;
+        VkImageViewType type;
+        VkFormat format;
+        VkImageSubresourceRange subresource;
+    };
+
     void createDescriptorLayouts();
     void preloadDescriptorSets();
-    void pickDepthStencilFormat(VkFormat& format, VkImageTiling& tiling) const;
-    void pickImageFormat(VkFormat& format, VkImageTiling& tiling) const;
     void allocateTransferBuffer();
 
     const System* system;
+    VkPhysicalDeviceProperties deviceProperties;
     MemoryPool memoryPool;
     BufferHolder bufferHolder;
     ImageHolder imageHolder;
@@ -99,15 +128,18 @@ private:
     uint32_t updateFence;
     uint32_t updateCommandBuffer;
     bool firstCommandBufferRun = true;
-    std::vector<VkMemoryRequirements> memoryRequirements[MemoryObjects::Count];
-    uint32_t vertexBufferSize;
-    uint32_t indexBufferSize;
-    uint32_t uniformBufferSize;
-    uint32_t currentDescriptorCount;
+    std::vector<VkMemoryRequirements> memoryRequirements[MemoryObjects::MOCount];
+    uint32_t vertexBufferSize = 0;
+    uint32_t indexBufferSize = 0;
+    uint32_t uniformBufferSize = 0;
+    uint32_t currentDescriptorCount = 0;
+    std::vector<ViewCreateCommand> viewCreateCommands;
     std::vector<BufferDescriptorUpdateCommand> bufferDescriptorUpdateCommands;
+    std::vector<ImageDescriptorUpdateCommand> imageDescriptorUpdateCommands;
     std::vector<BufferUpdateCommand> bufferUpdateCommands;
     std::vector<ImageUpdateCommand> imageUpdateCommands;
-    void* mappedTransferMemory;
+    std::vector<InitialImageLayoutUpdateCommand> layoutUpdateCommands;
+    void* mappedTransferMemory = nullptr;
 };
 
 #endif
