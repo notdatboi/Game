@@ -1,11 +1,11 @@
 #include<ImageHolder.hpp>
 #include<cmath>
 
-void ImageHolder::recordLayouChangeCommands(const VkCommandBuffer& cmd, const VkImageLayout oldLayout, const VkImageLayout newLayout, const VkImage& img, const VkImageSubresourceRange& subresource)
+void ImageHolder::recordLayoutChangeCommands(const VkCommandBuffer& cmd, const VkImageLayout oldLayout, const VkImageLayout newLayout, const VkImage& img, const VkImageSubresourceRange& subresource)
 {
     if(oldLayout == newLayout) return;
-    VkAccessFlags srcAccessFlags, dstAccessFlags;
-    VkPipelineStageFlags srcStageFlags, dstStageFlags;
+    VkAccessFlags srcAccessFlags = 0, dstAccessFlags = 0;
+    VkPipelineStageFlags srcStageFlags = 0, dstStageFlags = 0;
     if(oldLayout == VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED)
     {
         srcStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
@@ -24,6 +24,22 @@ void ImageHolder::recordLayouChangeCommands(const VkCommandBuffer& cmd, const Vk
             dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             dstAccessFlags = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
         }
+        else if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        }
+        else reportError("Unsupported layout transition.\n");
+    }
+    else if(oldLayout == VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+    {
+        srcStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+        srcAccessFlags = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+        if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+        }
         else reportError("Unsupported layout transition.\n");
     }
     else if(oldLayout == VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
@@ -34,6 +50,11 @@ void ImageHolder::recordLayouChangeCommands(const VkCommandBuffer& cmd, const Vk
         {
             dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             dstAccessFlags = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+        }
+        else if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
         }
         else reportError("Unsupported layout transition.\n");
     }
@@ -47,6 +68,16 @@ void ImageHolder::recordLayouChangeCommands(const VkCommandBuffer& cmd, const Vk
             dstAccessFlags = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
         }
         else reportError("Unsupported layout transition.\n");
+    }
+    else if(oldLayout == VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+    {
+        srcStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        srcAccessFlags = VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        if(newLayout == VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        {
+            dstStageFlags = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dstAccessFlags = VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        }
     }
     else reportError("Unsupported layout transition.\n");
 
@@ -89,7 +120,7 @@ void ImageHolder::recordMipmapGenCommands(const VkCommandBuffer& cmd, const VkIm
 
     if(oldLayout != VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
     {
-        recordLayouChangeCommands(cmd, oldLayout, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, srcSubresource);
+        recordLayoutChangeCommands(cmd, oldLayout, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, srcSubresource);
     }
     VkExtent2D srcExtent = imageExtent;
     for(auto i = 1; i < mipmapLevelCount; ++i)
@@ -110,22 +141,22 @@ void ImageHolder::recordMipmapGenCommands(const VkCommandBuffer& cmd, const VkIm
             dstSubresource.baseArrayLayer,
             dstSubresource.layerCount
         };
-        recordLayouChangeCommands(cmd, mipmapImageLayout, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, img, dstSubresource);
+        recordLayoutChangeCommands(cmd, mipmapImageLayout, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, img, dstSubresource);
         VkImageBlit blitInfo = 
         {
             srcLayers,
-            {{0, 0, 0}, {srcExtent.width, srcExtent.height, 1}},
+            {{0, 0, 0}, {static_cast<int32_t>(srcExtent.width), static_cast<int32_t>(srcExtent.height), 1}},
             dstLayers,
-            {{0, 0, 0}, {srcExtent.width / 2, srcExtent.height / 2, 1}},
+            {{0, 0, 0}, {static_cast<int32_t>(srcExtent.width / 2), static_cast<int32_t>(srcExtent.height) / 2, 1}},
         };
         vkCmdBlitImage(cmd, img, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blitInfo, VkFilter::VK_FILTER_LINEAR);
         srcExtent.width /= 2;
         srcExtent.height /= 2;
-        recordLayouChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, dstSubresource);
+        recordLayoutChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, img, dstSubresource);
     }
     srcSubresource.baseMipLevel = 0;
     srcSubresource.levelCount = mipmapLevelCount;
-    recordLayouChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, newLayout, img, srcSubresource);
+    recordLayoutChangeCommands(cmd, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, newLayout, img, srcSubresource);
 }
 
 const uint32_t ImageHolder::getMipmapLevelCount(const VkExtent2D& imageExtent)
@@ -165,24 +196,76 @@ const size_t ImageHolder::getCurrentImageCount() const
     return images.size();
 }
 
-void ImageHolder::addImages(const uint32_t count)
+const size_t ImageHolder::getCurrentViewCount() const
 {
-    images.insert(images.end(), count, ImageData());
+    return views.size();
 }
 
-void ImageHolder::initImage(const uint32_t index, const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageTiling tiling, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler)
+const size_t ImageHolder::getCurrentSamplerCount() const
 {
+    return samplers.size();
+}
+
+const VkImage& ImageHolder::getImage(const uint32_t index) const
+{
+    return images[index];
+}
+
+const VkImageView& ImageHolder::getView(const uint32_t index) const
+{
+    return views[index];
+}
+
+const VkSampler& ImageHolder::getSampler(const uint32_t index) const
+{
+    return samplers[index];
+}
+
+void ImageHolder::addImages(const uint32_t count)
+{
+    images.insert(images.end(), count, VkImage());
+}
+
+void ImageHolder::addViews(const uint32_t count)
+{
+    views.insert(views.end(), count, VkImageView());
+}
+
+void ImageHolder::addSamplers(const uint32_t count)
+{
+    samplers.insert(samplers.end(), count, VkSampler());
+}
+
+void ImageHolder::initImage(const uint32_t index, 
+    const VkImageCreateFlags flags,
+    const VkImageType type, 
+    const VkFormat format, 
+    const VkExtent3D& extent, 
+    const bool enableMipmapping,
+    uint32_t& mipmapLevels,                 // if mipmapping is enabled, rewrites with mipmap level count
+    const VkSampleCountFlagBits samples,
+    const VkImageTiling tiling, 
+    const VkImageUsageFlags usage)
+{
+    VkImageFormatProperties formatProperties;
+    vkGetPhysicalDeviceImageFormatProperties(system->getPhysicalDevice(), format, type, tiling, usage, flags, &formatProperties);
+    if((samples & formatProperties.sampleCounts) == 0) reportError("Not supported sample count.\n");
+    if(extent.width * extent.height * extent.depth > formatProperties.maxResourceSize) reportError("Too large image.\n");
+    if(enableMipmapping)
+    {
+        mipmapLevels = std::min(formatProperties.maxMipLevels, getMipmapLevelCount(extent));
+    }
     VkImageCreateInfo imageInfo = 
     {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         nullptr,
-        0,
-        VkImageType::VK_IMAGE_TYPE_2D,
+        flags,
+        type,
         format,
         extent,
-        mipmapLevels,
+        enableMipmapping ? mipmapLevels : 1,
         1,
-        VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT,
+        samples,
         tiling,
         usage,
         VkSharingMode::VK_SHARING_MODE_EXCLUSIVE,
@@ -190,111 +273,95 @@ void ImageHolder::initImage(const uint32_t index, const VkFormat format, const V
         &(system->getGraphicsQueue().familyIndex),
         VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED
     };
-    checkResult(vkCreateImage(system->getDevice(), &imageInfo, nullptr, &images[index].image), "Failed to create image.\n");
-
-    if(createView)
-    {
-        VkComponentMapping mapping = 
-        {
-            VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-            VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-            VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
-            VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY
-        };
-        VkImageSubresourceRange subresource = 
-        {
-            aspect,
-            0,
-            mipmapLevels,
-            0,
-            1
-        };
-        VkImageViewCreateInfo viewInfo = 
-        {
-            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            nullptr,
-            0,
-            images[index].image,
-            VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
-            format,
-            mapping,
-            subresource
-        };
-        checkResult(vkCreateImageView(system->getDevice(), &viewInfo, nullptr, &images[index].view), "Failed to create view.\n");
-    }
-
-    if(createSampler)
-    {
-        VkSamplerCreateInfo samplerInfo =
-        {
-            VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-            nullptr,
-            0,
-            VkFilter::VK_FILTER_LINEAR,
-            VkFilter::VK_FILTER_LINEAR,
-            VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR,
-            VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-            VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-            VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
-            0,
-            VK_FALSE,
-            0,
-            VK_FALSE,
-            VkCompareOp::VK_COMPARE_OP_ALWAYS,
-            0,
-            mipmapLevels - 1,
-            VkBorderColor::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-            VK_FALSE
-        };
-        checkResult(vkCreateSampler(system->getDevice(), &samplerInfo, nullptr, &images[index].sampler), "Failed to create sampler.\n");
-    }
+    checkResult(vkCreateImage(system->getDevice(), &imageInfo, nullptr, &images[index]), "Failed to create image.\n");
 }
 
-void ImageHolder::addAndInitImage(const VkFormat format, const VkExtent3D& extent, const uint32_t mipmapLevels, const VkImageTiling tiling, const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const bool createView, const bool createSampler)
+void ImageHolder::initView(const uint32_t index, const uint32_t imageIndex, const VkImageViewType type, const VkFormat format, const VkImageSubresourceRange& subresource)
 {
-    addImages(1);
-    initImage(getCurrentImageCount() - 1, format, extent, mipmapLevels, tiling, usage, aspect, createView, createSampler);
+    VkComponentMapping mapping = 
+    {
+        VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+        VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+        VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY,
+        VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY
+    };
+    VkImageViewCreateInfo viewInfo = 
+    {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        nullptr,
+        0,
+        images[imageIndex],
+        type,
+        format,
+        mapping,
+        subresource
+    };
+    checkResult(vkCreateImageView(system->getDevice(), &viewInfo, nullptr, &views[index]), "Failed to create view.\n");
+}
+
+void ImageHolder::initSampler(const uint32_t index, const float minLod, const float maxLod)
+{
+    VkSamplerCreateInfo samplerInfo =
+    {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        nullptr,
+        0,
+        VkFilter::VK_FILTER_LINEAR,
+        VkFilter::VK_FILTER_LINEAR,
+        VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+        VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+        VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+        0,
+        VK_FALSE,
+        0,
+        VK_FALSE,
+        VkCompareOp::VK_COMPARE_OP_ALWAYS,
+        minLod,
+        maxLod,
+        VkBorderColor::VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+        VK_FALSE
+    };
+    checkResult(vkCreateSampler(system->getDevice(), &samplerInfo, nullptr, &samplers[index]), "Failed to create sampler.\n");
 }
 
 void ImageHolder::destroyImage(const uint32_t index)
 {
-    if(images[index].view)
+    if(images[index])
     {
-        vkDestroyImageView(system->getDevice(), images[index].view, nullptr);
-        images[index].view = 0;
+        vkDestroyImage(system->getDevice(), images[index], nullptr);
+        images[index] = 0;
     }
-    if(images[index].sampler)
+}
+
+void ImageHolder::destroyView(const uint32_t index)
+{
+    if(views[index])
     {
-        vkDestroySampler(system->getDevice(), images[index].sampler, nullptr);
-        images[index].sampler = 0;
+        vkDestroyImageView(system->getDevice(), views[index], nullptr);
+        views[index] = 0;
     }
-    if(images[index].image)
+}
+
+void ImageHolder::destroySampler(const uint32_t index)
+{
+    if(samplers[index])
     {
-        vkDestroyImage(system->getDevice(), images[index].image, nullptr);
-        images[index].image = 0;
+        vkDestroySampler(system->getDevice(), samplers[index], nullptr);
+        samplers[index] = 0;
     }
 }
 
 const VkMemoryRequirements ImageHolder::getMemoryRequirements(const uint32_t index) const
 {
     VkMemoryRequirements requirements;
-    vkGetImageMemoryRequirements(system->getDevice(), images[index].image, &requirements);
+    vkGetImageMemoryRequirements(system->getDevice(), images[index], &requirements);
     return requirements;
 }
 
 void ImageHolder::bindMemory(const VkDeviceMemory& memory, const uint32_t offset, const uint32_t imageIndex) const
 {
-    checkResult(vkBindImageMemory(system->getDevice(), images[imageIndex].image, memory, offset), "Failed to bind image memory.\n");
-}
-
-const ImageHolder::ImageData& ImageHolder::operator[](const uint32_t index) const
-{
-    return images[index];
-}
-
-ImageHolder::ImageData& ImageHolder::operator[](const uint32_t index)
-{
-    return images[index];
+    checkResult(vkBindImageMemory(system->getDevice(), images[imageIndex], memory, offset), "Failed to bind image memory.\n");
 }
 
 void ImageHolder::destroy()
@@ -303,7 +370,11 @@ void ImageHolder::destroy()
     {
         destroyImage(index);
     }
+    for(auto index = 0; index < views.size(); ++index) destroyView(index);
+    for(auto index = 0; index < samplers.size(); ++index) destroySampler(index);
     images.clear();
+    views.clear();
+    samplers.clear();
 }
 
 ImageHolder::~ImageHolder()
