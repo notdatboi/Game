@@ -29,11 +29,16 @@ private:
     VkSurfaceKHR surface;
     QueueInfo graphicsQueue;
     QueueInfo presentQueue;
+    VkDebugUtilsMessengerEXT debugMessenger;
+
     void createInstance(const char** customExtensions, const uint32_t& extensionCount, const bool enableDebug);
+    void createDebugMessenger();
     void pickPhysicalDevice();
     void pickQueueFamilies();
     void createDevice(const VkPhysicalDeviceFeatures& enabledFeatures);
     void obtainQueues();
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type, const VkDebugUtilsMessengerCallbackDataEXT* data, void* userData);
 };
 
 #endif

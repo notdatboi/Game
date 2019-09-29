@@ -58,11 +58,23 @@ void System::createInstance(const char** customExtensions, const uint32_t& exten
         VK_MAKE_VERSION(1, 0, 0),
         "None",
         VK_MAKE_VERSION(0, 0, 0),
-        VK_MAKE_VERSION(1, 0, 0)
+        VK_API_VERSION_1_0
     };
 
     std::vector<const char*> layers;
-    const char* preferredLayer = "VK_LAYER_KHRONOS_validation";
+    const char* preferredLayer =
+    //"VK_LAYER_LUNARG_api_dump";
+    //"VK_LAYER_LUNARG_vktrace";
+    //"VK_LAYER_LUNARG_device_simulation";
+    //"VK_LAYER_LUNARG_monitor";
+    //"VK_LAYER_LUNARG_screenshot";
+    //"VK_LAYER_LUNARG_core_validation";
+    //"VK_LAYER_GOOGLE_threading";
+    "VK_LAYER_KHRONOS_validation";
+    //"VK_LAYER_LUNARG_parameter_validation";
+    //"VK_LAYER_LUNARG_standard_validation";
+    //"VK_LAYER_GOOGLE_unique_objects";
+    //"VK_LAYER_LUNARG_object_tracker";
     std::vector<const char*> extensions(customExtensions, customExtensions + extensionCount);
     if(enableDebug)
     {
@@ -79,6 +91,7 @@ void System::createInstance(const char** customExtensions, const uint32_t& exten
                 break;
             }
         }
+        
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
@@ -95,6 +108,8 @@ void System::createInstance(const char** customExtensions, const uint32_t& exten
     };
 
     checkResult(vkCreateInstance(&instanceInfo, nullptr, &instance), "Instance was not created.\n");
+
+    if(enableDebug) createDebugMessenger();
 }
 
 void System::pickPhysicalDevice()
@@ -128,7 +143,7 @@ void System::pickQueueFamilies()
         if(properties[ind].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             VkBool32 surfaceSupported;
-            vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, ind, surface, &surfaceSupported);
+            checkResult(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, ind, surface, &surfaceSupported), "Failed to get device properties.\n");
             if(surfaceSupported)
             {
                 graphicsQueue.familyIndex = ind;
@@ -140,7 +155,7 @@ void System::pickQueueFamilies()
         else
         {
             VkBool32 surfaceSupported;
-            vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, ind, surface, &surfaceSupported);
+            checkResult(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, ind, surface, &surfaceSupported), "Failed to get device properties.\n");
             if(surfaceSupported)
             {
                 presentQueue.familyIndex = ind;
@@ -223,11 +238,43 @@ void System::destroy()
         vkDestroyDevice(device, nullptr);
         device = 0;
     }
+    if(debugMessenger)
+    {
+        auto destroyFunc = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        if(destroyFunc != nullptr) destroyFunc(instance, debugMessenger, nullptr);
+        debugMessenger = 0;
+    }
     if(instance)
     {
         vkDestroyInstance(instance, nullptr);
         instance = 0;
     }
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL System::callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type, const VkDebugUtilsMessengerCallbackDataEXT* data, void* userData)
+{
+    if(severity > VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) reportError(data->pMessage);
+    printLog("DEBUG CALLBACK: ");
+    printLog(data->pMessage);
+    printLog("\n");
+    return VK_FALSE;
+}
+
+void System::createDebugMessenger()
+{
+    VkDebugUtilsMessengerCreateInfoEXT info = 
+    {
+        VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+        nullptr,
+        0,
+        VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT,
+        VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT | VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT,
+        callback,
+        nullptr
+    };
+    auto creationFunc = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if(creationFunc == nullptr) reportError("Can't obtain debug messenger creation function.\n");
+    checkResult(creationFunc(instance, &info, nullptr, &debugMessenger), "Failed to create debug messenger");
 }
 
 System::~System()
