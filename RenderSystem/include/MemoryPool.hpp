@@ -11,8 +11,8 @@ public:
     VkDeviceMemory& operator[](const uint32_t index);
     Array<uint32_t> allocate(const uint32_t memoryObjectIndex, const VkMemoryPropertyFlags property, const Array<VkMemoryRequirements>& group);   // returns offsets
     void allocate(const uint32_t memoryObjectIndex, const VkMemoryPropertyFlags property, const VkMemoryRequirements& mem);
-    void* map(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size);
-    void flush(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size);
+    void* map(const uint32_t memoryObjectIndex, const VkDeviceSize offset, const VkDeviceSize size);
+    void flush(const uint32_t memoryObjectIndex, const VkDeviceSize offset, const VkDeviceSize size);
     void unmap(const uint32_t memoryObjectIndex);
     static void align(uint32_t& size, const uint32_t alignment);
     static void align(uint32_t& alignment1, uint32_t& alignment2);

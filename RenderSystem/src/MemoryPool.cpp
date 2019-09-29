@@ -46,18 +46,18 @@ Array<uint32_t> MemoryPool::allocate(const uint32_t memoryObjectIndex, const VkM
         }
     }
     if(memoryType == 0) reportError("No way to choose common memory type.\n");
-    for(auto ind = 0; ind < sizeof(uint32_t); ++ind)
+    for(uint32_t ind = 0; ind < 32; ++ind)
     {
-        if(((1 << ind) & memoryType) != 0)
+        if(((1U << ind) & memoryType) != 0)
         {
-            if(memoryProperties.memoryTypes[ind].propertyFlags == property)
+            if((memoryProperties.memoryTypes[ind].propertyFlags & property) != 0)
             {
                 memoryTypeIndex = ind;
                 break;
             }
         }
     }
-    if(memoryTypeIndex == (~0)) reportError("No way to allocate memory with this memory properties.\n");
+    if(memoryTypeIndex == (~0)) reportError("No way to allocate memory with these memory properties.\n");
     VkMemoryAllocateInfo memoryInfo;
     memoryInfo = 
     {
@@ -75,11 +75,11 @@ void MemoryPool::allocate(const uint32_t memoryObjectIndex, const VkMemoryProper
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(system->getPhysicalDevice(), &memoryProperties);
     uint32_t memoryTypeIndex = (~0);
-    for(auto ind = 0; ind < sizeof(uint32_t); ++ind)
+    for(uint32_t ind = 0; ind < 32; ++ind)
     {
-        if(((1 << ind) & mem.memoryTypeBits) != 0)
+        if(((1U << ind) & mem.memoryTypeBits) != 0)
         {
-            if(memoryProperties.memoryTypes[ind].propertyFlags == property)
+            if((memoryProperties.memoryTypes[ind].propertyFlags & property) != 0)
             {
                 memoryTypeIndex = ind;
                 break;
@@ -96,17 +96,16 @@ void MemoryPool::allocate(const uint32_t memoryObjectIndex, const VkMemoryProper
         memoryTypeIndex
     };
     checkResult(vkAllocateMemory(system->getDevice(), &memoryInfo, nullptr, &memory[memoryObjectIndex]), "Failed to allocate memory.\n");
-
 }
 
-void* MemoryPool::map(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size)
+void* MemoryPool::map(const uint32_t memoryObjectIndex, const VkDeviceSize offset, const VkDeviceSize size)
 {
     void* data;
     checkResult(vkMapMemory(system->getDevice(), memory[memoryObjectIndex], offset, size, 0, &data), "Failed to map memory.\n");
     return data;
 }
 
-void MemoryPool::flush(const uint32_t memoryObjectIndex, const uint32_t offset, const uint32_t size)
+void MemoryPool::flush(const uint32_t memoryObjectIndex, const VkDeviceSize offset, const VkDeviceSize size)
 {
     VkMappedMemoryRange range = 
     {
