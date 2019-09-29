@@ -23,7 +23,7 @@ public:
         int width;
         int height;
         int channels;
-        unsigned char* data;
+        unsigned char* data = nullptr;
     };
     ImageLoader();
     void create(const uint32_t maxImageCount);
