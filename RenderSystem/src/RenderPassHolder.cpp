@@ -24,7 +24,7 @@ void RenderPassHolder::create(const System* system, const Array<VkAttachmentDesc
     associatedFramebuffers.create(framebufferCount);
 }
 
-void RenderPassHolder::createFramebuffer(const uint32_t index, const Array<VkImageView>& attachments, const VkExtent2D& extent, const uint32_t layers = 1)
+void RenderPassHolder::createFramebuffer(const uint32_t index, const Array<VkImageView>& attachments, const VkExtent2D& extent, const uint32_t layers)
 {
     VkFramebufferCreateInfo framebufferInfo = 
     {
@@ -61,7 +61,7 @@ void RenderPassHolder::destroy()
             associatedFramebuffers[ind] = 0;
         }
     }
-    associatedFramebuffers.clean();
+    associatedFramebuffers.clear();
     if(renderPass)
     {
         vkDestroyRenderPass(system->getDevice(), renderPass, nullptr);

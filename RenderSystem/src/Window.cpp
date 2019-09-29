@@ -1,7 +1,7 @@
 #include<Window.hpp>
 #include<cstring>
 
-Window::Window()
+Window::Window(): window(nullptr)
 {
 }
 
@@ -44,10 +44,15 @@ VkExtent2D Window::getWindowSize() const
     return size;
 }
 
-Window::~Window()
+void Window::destroy()
 {
     if(window)
     {
         glfwDestroyWindow(window);
+        window = nullptr;
     }
+}
+
+Window::~Window()
+{
 }

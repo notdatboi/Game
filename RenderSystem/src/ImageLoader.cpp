@@ -51,7 +51,7 @@ const unsigned char* ImageLoader::Image::getData() const
 
 const VkExtent2D ImageLoader::Image::getExtent() const
 {
-    return {width, height};
+    return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 }
 
 const uint32_t ImageLoader::Image::getChannelCount() const

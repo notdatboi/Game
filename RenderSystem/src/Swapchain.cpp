@@ -46,6 +46,7 @@ void Swapchain::create(const System* system, uint32_t& imageCount, const VkForma
     format = chosenFormat.format;
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
+    imageCount = 3;
     if(imageCount > surfaceCapabilities.maxImageCount) imageCount = surfaceCapabilities.maxImageCount;
     if(imageCount < surfaceCapabilities.minImageCount) imageCount = surfaceCapabilities.minImageCount;
     VkImageUsageFlags neededUsageFlags = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -132,7 +133,7 @@ const VkExtent2D& Swapchain::getExtent() const
 const uint32_t Swapchain::acquireNextImage(const VkSemaphore& signalSemaphore, const VkFence& signalFence) const
 {
     uint32_t index;
-    checkResult(vkAcquireNextImageKHR(system->getDevice(), swapchain, ~0, signalSemaphore, signalFence, &index), "Failed to acquire image.\n");
+    checkResult(vkAcquireNextImageKHR(system->getDevice(), swapchain, ~0UL, signalSemaphore, signalFence, &index), "Failed to acquire image.\n");
     return index;
 }
 
@@ -171,8 +172,8 @@ void Swapchain::destroy()
         vkDestroySwapchainKHR(system->getDevice(), swapchain, nullptr);
         swapchain = 0;
     }
-    images.clean();
-    views.clean();
+    images.clear();
+    views.clear();
 }
 
 Swapchain::~Swapchain()

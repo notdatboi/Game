@@ -2,6 +2,8 @@
 #include<iostream>
 #include<string>
 
+Shader::Shader(){}
+
 const std::string getFilePath(const std::string& filename)
 {
     const auto folderNameEndIndex = filename.find_last_of("/\\");
@@ -50,6 +52,7 @@ const EShLanguage parseAndSetType(const std::string& suffix, VkShaderStageFlagBi
     {
         std::cout << "Invalid shader.\n";
     }
+    return EShLangCount;
 }
 
 void Shader::create(const System* system, const char* filename)
@@ -115,6 +118,9 @@ void Shader::create(const System* system, const char* filename)
     glslang::GlslangToSpv(*program.getIntermediate(shaderType), compiled, &logger, &spvOptions);
 
     VkShaderModuleCreateInfo info;
+    info.flags = 0;
+    info.pNext = nullptr;
+    info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     info.codeSize = compiled.size() * sizeof(uint32_t);
     info.pCode = compiled.data();
 

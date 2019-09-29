@@ -13,11 +13,11 @@ void SynchronizationPool::addFences(const uint32_t count, const bool signaled)
     {
         VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         nullptr,
-        signaled ? VkFenceCreateFlagBits::VK_FENCE_CREATE_SIGNALED_BIT : 0
+        signaled ? VkFenceCreateFlagBits::VK_FENCE_CREATE_SIGNALED_BIT : VkFenceCreateFlags()
     };
     auto first = getFenceCount();
     fences.insert(fences.end(), count, VkFence());
-    for(auto ind = first; ind < count; ++ind)
+    for(auto ind = first; ind < fences.size(); ++ind)
     {
         checkResult(vkCreateFence(system->getDevice(), &info, nullptr, &fences[ind]), "Failed to create fence.\n");
     }
@@ -64,7 +64,7 @@ void SynchronizationPool::waitForFences(const uint32_t first, const uint32_t cou
     checkResult(vkWaitForFences(system->getDevice(), count, &fences[first], waitAll, timeout), "Failed to wait for fences.\n");
 }
 
-void SynchronizationPool::resetFences(const uint32_t first, const uint32_t count = 1) const
+void SynchronizationPool::resetFences(const uint32_t first, const uint32_t count) const
 {
     checkResult(vkResetFences(system->getDevice(), count, &fences[first]), "Failed to reset fences.\n");
 }

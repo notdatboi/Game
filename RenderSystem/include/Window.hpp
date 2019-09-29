@@ -14,6 +14,7 @@ public:
     const char** getVulkanExtensions(uint32_t& count) const;
     VkSurfaceKHR getVulkanSurface(const VkInstance& instance) const;
     VkExtent2D getWindowSize() const;
+    void destroy();
     ~Window();
 private:
     VkExtent2D size;

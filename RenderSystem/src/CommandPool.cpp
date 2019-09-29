@@ -7,14 +7,14 @@ const VkCommandPool& CommandPool::getPool() const
     return pool;
 }
 
-void CommandPool::create(const System* system, const bool dynamicPool = false)
+void CommandPool::create(const System* system, const bool dynamicPool)
 {
     this->system = system;
     VkCommandPoolCreateInfo poolInfo = 
     {
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         nullptr,
-        dynamicPool ? (VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) : 0,
+        dynamicPool ? (VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) : VkCommandPoolCreateFlags(),
         system->getGraphicsQueue().familyIndex
     };
     checkResult(vkCreateCommandPool(system->getDevice(), &poolInfo, nullptr, &pool), "Failed to create command pool.\n");
