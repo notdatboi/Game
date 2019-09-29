@@ -1,6 +1,6 @@
 #include<GraphicsPipelineUtils.hpp>
 
-PipelineInfoBuilder::PipelineInfoBuilder()
+PipelineInfoBuilder::PipelineInfoBuilder(): info()
 {
     vertexInputState = {};
     inputAssemblyState = {};
@@ -11,11 +11,12 @@ PipelineInfoBuilder::PipelineInfoBuilder()
     depthStencilState = {};
     colorBlendState = {};
     dynamicState = {};
-    layout = nullptr;
-    renderPass = nullptr;
-    subpass = {};
-    basePipeline = nullptr;
-    basePipelineIndex = {};
+    info = 
+    {
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        nullptr,
+        0
+    };
 }
 
 void PipelineInfoBuilder::setShaderStages(const Array<ShaderStageInfo>& stages)
@@ -34,57 +35,91 @@ void PipelineInfoBuilder::setShaderStages(const Array<ShaderStageInfo>& stages)
             nullptr
         };
     }
+    info.stageCount = shaderStages.getSize();
+    info.pStages = shaderStages.getPtr();
 }
 
-void PipelineInfoBuilder::setVertexInputState(const Array<VkVertexInputBindingDescription>& bindings, const Array<VkVertexInputAttributeDescription>& attributes)
+void PipelineInfoBuilder::setVertexInputState(const bool enable, const Array<VkVertexInputBindingDescription>& bindings, const Array<VkVertexInputAttributeDescription>& attributes)
 {
-    vertexInputState = 
+    if(!enable)
     {
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        bindings.getSize(),
-        bindings.getPtr(),
-        attributes.getSize(),
-        attributes.getPtr()
-    };
+        info.pVertexInputState = nullptr;
+    }
+    else
+    {
+        vertexInputState = 
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            bindings.getSize(),
+            bindings.getPtr(),
+            attributes.getSize(),
+            attributes.getPtr()
+        };
+        info.pVertexInputState = &vertexInputState;
+    }
 }
 
-void PipelineInfoBuilder::setInputAssemblyState(const VkPrimitiveTopology topology, const VkBool32 enablePrimitiveRestart)
+void PipelineInfoBuilder::setInputAssemblyState(const bool enable, const VkPrimitiveTopology topology, const VkBool32 enablePrimitiveRestart)
 {
-    inputAssemblyState = 
+    if(!enable)
     {
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        topology,
-        enablePrimitiveRestart
-    };
+        info.pInputAssemblyState = nullptr;
+    }
+    else
+    {
+        inputAssemblyState = 
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            topology,
+            enablePrimitiveRestart
+        };
+        info.pInputAssemblyState = &inputAssemblyState;
+    }
 }
 
-void PipelineInfoBuilder::setTessellationState(const uint32_t controlPoints)
+void PipelineInfoBuilder::setTessellationState(const bool enable, const uint32_t controlPoints)
 {
-    tessellationState = 
+    if(!enable)
     {
-        VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        controlPoints
-    };
+        info.pTessellationState = nullptr;
+    }
+    else
+    {
+        tessellationState = 
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            controlPoints
+        };
+        info.pTessellationState = &tessellationState;
+    }
 }
 
-void PipelineInfoBuilder::setViewportState(const Array<VkViewport>& viewports, const Array<VkRect2D>& scissors)
+void PipelineInfoBuilder::setViewportState(const bool enable, const Array<VkViewport>& viewports, const Array<VkRect2D>& scissors)
 {
-    viewportState = 
+    if(!enable)
     {
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        viewports.getSize(),
-        viewports.getPtr(),
-        scissors.getSize(),
-        scissors.getPtr()
-    };
+        info.pViewportState = nullptr;
+    }
+    else
+    {
+        viewportState = 
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            viewports.getSize(),
+            viewports.getPtr(),
+            scissors.getSize(),
+            scissors.getPtr()
+        };
+        info.pViewportState = &viewportState;
+    }
 }
 
 void PipelineInfoBuilder::setRasterizationState(const VkBool32 enableDepthClamp, const VkPolygonMode polygonMode, const VkCullModeFlags culling, const VkFrontFace frontFace, const VkBool32 enableDepthBias, const float constantFactor, const float clamp, const float slopeFactor)
@@ -105,117 +140,127 @@ void PipelineInfoBuilder::setRasterizationState(const VkBool32 enableDepthClamp,
         slopeFactor,
         1
     };
+    info.pRasterizationState = &rasterizationState;
 }
 
-void PipelineInfoBuilder::setMultisampleState(const VkSampleCountFlagBits samples, const VkBool32 enableSampleShading, const float minSampleShading, const VkSampleMask* sampleMask, const VkBool32 alphaToCoverage, const VkBool32 alphaToOne)
+void PipelineInfoBuilder::setMultisampleState(const bool enable, const VkSampleCountFlagBits samples, const VkBool32 enableSampleShading, const float minSampleShading, const VkSampleMask* sampleMask, const VkBool32 alphaToCoverage, const VkBool32 alphaToOne)
 {
-    multisampleState = 
+    if(!enable)
     {
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        samples,
-        enableSampleShading,
-        minSampleShading,
-        sampleMask,
-        alphaToCoverage,
-        alphaToOne
-    };
+        info.pMultisampleState = nullptr;
+    }
+    else
+    {
+        multisampleState = 
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            samples,
+            enableSampleShading,
+            minSampleShading,
+            sampleMask,
+            alphaToCoverage,
+            alphaToOne
+        };
+        info.pMultisampleState = &multisampleState;
+    }
 }
 
-void PipelineInfoBuilder::setDepthStencilState(const VkBool32 enableDepthTest, const VkBool32 enableDepthWrite, const VkCompareOp compareOp, const VkBool32 enableDepthBoundsTest, const VkBool32 enableStencilTest, const VkStencilOpState& front, const VkStencilOpState& back, const float minDepthBounds, const float maxDepthBounds)
+void PipelineInfoBuilder::setDepthStencilState(const bool enable, const VkBool32 enableDepthTest, const VkBool32 enableDepthWrite, const VkCompareOp compareOp, const VkBool32 enableDepthBoundsTest, const VkBool32 enableStencilTest, const VkStencilOpState& front, const VkStencilOpState& back, const float minDepthBounds, const float maxDepthBounds)
 {
-    depthStencilState = 
+    if(!enable)
     {
-        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        enableDepthTest,
-        enableDepthWrite,
-        compareOp,
-        enableDepthBoundsTest,
-        enableStencilTest,
-        front,
-        back,
-        minDepthBounds,
-        maxDepthBounds
-    };
+        info.pDepthStencilState = nullptr;
+    }
+    else
+    {
+        depthStencilState = 
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            enableDepthTest,
+            enableDepthWrite,
+            compareOp,
+            enableDepthBoundsTest,
+            enableStencilTest,
+            front,
+            back,
+            minDepthBounds,
+            maxDepthBounds
+        };
+        info.pDepthStencilState = &depthStencilState;
+    }
 }
 
-void PipelineInfoBuilder::setColorBlendState(const VkBool32 enableLogicOp, const VkLogicOp logicOp, const Array<VkPipelineColorBlendAttachmentState>& attachments)
+void PipelineInfoBuilder::setColorBlendState(const bool enable, const VkBool32 enableLogicOp, const VkLogicOp logicOp, const Array<VkPipelineColorBlendAttachmentState>& attachments)
 {
-    colorBlendState = 
+    if(!enable)
     {
-        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        enableLogicOp,
-        logicOp,
-        attachments.getSize(),
-        attachments.getPtr(),
-        {0, 0, 0, 0}
-    };
+        info.pColorBlendState = nullptr;
+    }
+    else
+    {
+        colorBlendState = 
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            enableLogicOp,
+            logicOp,
+            attachments.getSize(),
+            attachments.getPtr(),
+            {0, 0, 0, 0}
+        };
+        info.pColorBlendState = &colorBlendState;
+    }
 }
 
-void PipelineInfoBuilder::setDynamicState(const Array<VkDynamicState>& dynamicStates)
+void PipelineInfoBuilder::setDynamicState(const bool enable, const Array<VkDynamicState>& dynamicStates)
 {
-    dynamicState = 
+    if(!enable)
     {
-        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        nullptr,
-        0,
-        dynamicStates.getSize(),
-        dynamicStates.getPtr()
-    };
+        info.pDynamicState = nullptr;
+    }
+    else
+    {
+        dynamicState = 
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            dynamicStates.getSize(),
+            dynamicStates.getPtr()
+        };
+        info.pDynamicState = &dynamicState;
+    }
 }
 
 void PipelineInfoBuilder::setLayout(const VkPipelineLayout* layout)
 {
-    this->layout = layout;
+    info.layout = *layout;
 }
 
 void PipelineInfoBuilder::setRenderPass(const VkRenderPass* renderPass, const uint32_t subpass)
 {
-    this->renderPass = renderPass;
-    this->subpass = subpass;
+    info.renderPass = *renderPass;
+    info.subpass = subpass;
 }
 
 void PipelineInfoBuilder::setBasePipeline(const VkPipeline* basePipeline, const int32_t basePipelineIndex)
 {
-    this->basePipeline = basePipeline;
-    this->basePipelineIndex = basePipelineIndex;
+    info.basePipelineHandle = *basePipeline;
+    info.basePipelineIndex = basePipelineIndex;
 }
 
 const VkGraphicsPipelineCreateInfo PipelineInfoBuilder::generatePipelineInfo() const
 {
-    VkGraphicsPipelineCreateInfo info = 
-    {
-        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        nullptr,
-        0,
-        shaderStages.getSize(),
-        shaderStages.getPtr(),
-        &vertexInputState,
-        &inputAssemblyState,
-        &tessellationState,
-        &viewportState,
-        &rasterizationState,
-        &multisampleState,
-        &depthStencilState,
-        &colorBlendState,
-        &dynamicState,
-        *layout,
-        *renderPass,
-        subpass,
-        basePipeline ? *basePipeline : VkPipeline(),
-        basePipelineIndex
-    };
     return info;
 }
 
 PipelineInfoBuilder::~PipelineInfoBuilder()
 {
-
 }
 
 PipelinePool::PipelinePool(){}
