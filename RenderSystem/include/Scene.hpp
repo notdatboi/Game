@@ -25,7 +25,10 @@ public:
         const DescriptorInfo& getModelMatrixDescriptor() const;
         const std::map<std::string, Node>& getChildrenNodes() const;
         void setModelMatrix(const aiMatrix4x4& mat);
-        // rotate, scale, move
+        void rotate(const float radians, const glm::vec3 axis);
+        void rotate(const glm::vec3 eulerAngles);
+        void scale(const glm::vec3 s);
+        void move(const glm::vec3 m);
         void destroy();
         ~Node();
     private:

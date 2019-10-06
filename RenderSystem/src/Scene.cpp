@@ -9,27 +9,47 @@ void Scene::Node::create(ObjectManagementStrategy* allocator, const uint32_t max
     allocator->allocateUniformBuffer(sizeof(modelMatrix), VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT | VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT | VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, modelMatrixBuffer, modelMatrixDescriptor);
     allocator->updateBuffer(&modelMatrix, modelMatrixBuffer);
 }
-#include<iostream>
+
+void Scene::Node::rotate(const float radians, const glm::vec3 axis)
+{
+    modelMatrix = glm::rotate(modelMatrix, radians, axis);
+}
+
+void Scene::Node::rotate(const glm::vec3 eulerAngles)
+{
+    modelMatrix *= glm::orientate4(eulerAngles);
+}
+
+void Scene::Node::scale(const glm::vec3 s)
+{
+    modelMatrix = glm::scale(modelMatrix, s);
+}
+
+void Scene::Node::move(const glm::vec3 m)
+{
+    modelMatrix = glm::translate(modelMatrix, m);
+}
+
+//#include<iostream>
 void Scene::Node::setModelMatrix(const aiMatrix4x4& mat)
 {
     aiVector3D aiscale, airotation, aiposition;
     mat.Decompose(aiscale, airotation, aiposition);
-    glm::vec3 s = {aiscale.x, aiscale.y, aiscale.z}, r = {airotation.x, airotation.y, airotation.z}, p = {aiposition.x, aiposition.y, aiposition.z};
-    std::cout << s.x << ' ' << s.y << ' ' << s.z << " <- scale\n";
-    std::cout << p.x << ' ' << p.y << ' ' << p.z << " <- pos\n";
-    std::cout << r.x << ' ' << r.y << ' ' << r.z << " <- rot\n";
-    modelMatrix *= glm::orientate4(r);
-    modelMatrix = glm::translate(modelMatrix, p);
-    modelMatrix = glm::scale(modelMatrix, s);
-    std::cout << "Model: \n";
-    for(int i = 0; i < 4; ++i)
-    {
-        for(int j = 0; j < 4; ++j)
-        {
-            std::cout << modelMatrix[i][j] << ' ';
-        }
-        std::cout << '\n';
-    }
+    //std::cout << s.x << ' ' << s.y << ' ' << s.z << " <- scale\n";
+    //std::cout << p.x << ' ' << p.y << ' ' << p.z << " <- pos\n";
+    //std::cout << r.x << ' ' << r.y << ' ' << r.z << " <- rot\n";
+    rotate({airotation.x, airotation.y, airotation.z});
+    move({aiposition.x, aiposition.y, aiposition.z});
+    scale({aiscale.x, aiscale.y, aiscale.z});
+//    std::cout << "Model: \n";
+//    for(int i = 0; i < 4; ++i)
+//    {
+//        for(int j = 0; j < 4; ++j)
+//        {
+//            std::cout << modelMatrix[i][j] << ' ';
+//        }
+//        std::cout << '\n';
+//    }
 }
 
 void Scene::Node::setMesh(const uint32_t index, Mesh* mesh)
@@ -104,7 +124,7 @@ void Scene::loadNode(const aiNode* ainode, Node& node)
     }
     for(auto i = 0; i < ainode->mNumChildren; ++i)
     {
-        std::cout << (*(ainode->mChildren + i))->mName.C_Str() << " <- child\n";
+        //std::cout << (*(ainode->mChildren + i))->mName.C_Str() << " <- child\n";
         node.addChild((*(ainode->mChildren + i))->mName.C_Str());
         loadNode(*(ainode->mChildren + i), node[(*(ainode->mChildren + i))->mName.C_Str()]);
     }
